@@ -91,6 +91,9 @@ class WaveAttenuationEnv(Env):
 
         self.avg_velocity_collector = []
         self.min_velocity_collector = []
+        self.rl_velocity_collector = []
+        self.rl_accel_collector = []
+        self.rl_accel_realized_collector = []
         self.test = False
 
         super().__init__(env_params, sim_params, network, simulator)
@@ -172,6 +175,10 @@ class WaveAttenuationEnv(Env):
         """
         self.avg_velocity_collector = []
         self.min_velocity_collector = []
+        self.rl_velocity_collector = []
+        self.rl_accel_collector = []
+        self.rl_accel_realized_collector = []
+
         # skip if ring length is None
         if self.env_params.additional_params['ring_length'] is None:
             return super().reset()
@@ -266,15 +273,35 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         # self.avg_velocity_collector.append(np.mean(speed))
         # self.min_velocity_collector.append(np.min(speed))
 
+        # rl_id = self.k.vehicle.get_rl_ids()[0]
+        # self.rl_velocity_collector.append(self.k.vehicle.get_speed(rl_id))
+        # self.rl_accel_collector.append(self.k.vehicle.get_accel(rl_id))
+        # self.rl_accel_realized_collector.append(self.k.vehicle.get_realized_accel(rl_id))
+
         # # Save the avg and min velocity collectors to a file
         # if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
-        #     with open("./avg_velocity_results.txt", "a") as f:
+        #     print(self.step_counter)
+
+        #     with open(f"/home/michael/Desktop/flow/michael_files/avg_velocity.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline="")
         #         f.write("\n")
             
-        #     with open("./min_velocity_results.txt", "a") as f:
+        #     with open(f"/home/michael/Desktop/flow/michael_files/min_velocity.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline="")
         #         f.write("\n")
+            
+        #     with open(f"/home/michael/Desktop/flow/michael_files/rl_velocity.txt", "a") as f:
+        #         np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline="")
+        #         f.write("\n")
+
+        #     with open(f"/home/michael/Desktop/flow/michael_files/rl_accel.txt", "a") as f:
+        #         np.savetxt(f, np.asarray(self.rl_accel_collector), delimiter=",", newline="")
+        #         f.write("\n")
+        
+        #     with open(f"/home/michael/Desktop/flow/michael_files/rl_accel_realized.txt", "a") as f:
+        #         np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline="")
+        #         f.write("\n")
+
         
         '''
             Following code is the original code from Cathy Wu 
