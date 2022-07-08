@@ -281,6 +281,8 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         # # Save the avg and min velocity collectors to a file
         # if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
         #     print(self.step_counter)
+        #     print(len(self.avg_velocity_collector))
+        #     print(len(self.min_velocity_collector))
 
         #     with open(f"/home/michael/Desktop/flow/michael_files/avg_velocity.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline="")
@@ -447,7 +449,7 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         self.k.vehicle.set_observed(lead_id)
     
     def map_coordinates(self, x, y):
-        offset, boundary_width = self.k.simulation.get_info()
+        offset, boundary_width = self.k.simulation.offset, self.k.simulation.boundary_width
         half_width = boundary_width / 2
 
         x, y = x - offset, y - offset

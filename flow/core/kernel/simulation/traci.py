@@ -73,6 +73,9 @@ class TraCISimulation(KernelSimulation):
         self.timestep = 0
         self.id_timed = ""
 
+        self.offset = 0.
+        self.boundary_width = 0.
+
 
     def pass_api(self, kernel_api):
         """See parent class.
@@ -98,8 +101,16 @@ class TraCISimulation(KernelSimulation):
         """See parent class."""
         # start_time = time.time()
         
-        if self.kernel_api.gui.getZoom() != 80:
+        if self.kernel_api.gui.getZoom() != 80: # This only occurs one time at the start of the simulation
             self.kernel_api.gui.setZoom(traci.gui.DEFAULT_VIEW, 80)
+
+            self.offset = self.kernel_api.gui.getOffset()[0]
+
+            boundary = self.kernel_api.gui.getBoundary()
+            boundary_min = boundary[0][0]
+            boundary_max = boundary[1][0]
+
+            self.boundary_width = abs(boundary_min) + abs(boundary_max)
 
         # self.id_timed = f"{self.id}{self.timestep}"
         self.kernel_api.gui.screenshot(traci.gui.DEFAULT_VIEW, f"/home/michael/Desktop/flow/sumo_obs/state_{self.id}.jpeg")
@@ -114,18 +125,6 @@ class TraCISimulation(KernelSimulation):
     
     def get_identifier(self):
         return self.identifier
-
-    def get_info(self):
-        offset = self.kernel_api.gui.getOffset()[0]
-
-        boundary = self.kernel_api.gui.getBoundary()
-        boundary_min = boundary[0][0]
-        boundary_max = boundary[1][0]
-
-        boundary_width = abs(boundary_min) + abs(boundary_max)
-
-        return offset, boundary_width
-
 
     def update(self, reset):
         """See parent class."""
