@@ -364,7 +364,7 @@ class Env(gym.Env, metaclass=ABCMeta):
 
             self.apply_rl_actions(rl_actions)
 
-            self.additional_command()
+            # self.additional_command()
 
             # advance the simulation in the simulator by one step
             self.k.simulation.simulation_step()

@@ -102,7 +102,8 @@ class TraCISimulation(KernelSimulation):
         # start_time = time.time()
         
         if self.kernel_api.gui.getZoom() != 80: # This only occurs one time at the start of the simulation
-            self.kernel_api.gui.setZoom(traci.gui.DEFAULT_VIEW, 80)
+            self.kernel_api.gui.setZoom(traci.gui.DEFAULT_VIEW, 70)
+            self.kernel_api.gui.setSchema(traci.gui.DEFAULT_VIEW, "faster standard")
 
             self.offset = self.kernel_api.gui.getOffset()[0]
 
