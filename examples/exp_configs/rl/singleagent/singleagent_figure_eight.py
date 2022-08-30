@@ -11,7 +11,7 @@ HORIZON = 1500
 # number of rollouts per training iteration
 N_ROLLOUTS = 20
 # number of parallel workers
-N_CPUS = 2
+N_CPUS = 5
 
 # We place one autonomous vehicle and 13 human-driven vehicles in the network
 vehicles = VehicleParams()
