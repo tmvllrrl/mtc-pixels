@@ -420,6 +420,12 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         # observation = observation / 255.
 
         '''
+            All white observations to make sure that learning on images is working and that the policy
+            is not just randomly learning to do the correct behavior.
+        '''
+        # observation = np.zeros((84,84)) / 255.
+
+        '''
             Comparing time between different ways for loading the images
             Idea is to save two times on 1 line: 
                 1. the time taken to take the screenshot/frame
