@@ -113,15 +113,15 @@ class WaveAttenuationEnv(Env):
             shape=(self.initial_vehicles.num_rl_vehicles, ),
             dtype=np.float32)
 
-    @property
-    def observation_space(self):
-        """See class definition."""
-        self.obs_var_labels = ["Velocity", "Absolute_pos"]
-        return Box(
-            low=0,
-            high=1,
-            shape=(2 * self.initial_vehicles.num_vehicles, ),
-            dtype=np.float32)
+    # @property
+    # def observation_space(self):
+    #     """See class definition."""
+    #     self.obs_var_labels = ["Velocity", "Absolute_pos"]
+    #     return Box(
+    #         low=0,
+    #         high=1,
+    #         shape=(2 * self.initial_vehicles.num_vehicles, ),
+    #         dtype=np.float32)
 
     def _apply_rl_actions(self, rl_actions):
         """See class definition."""
@@ -157,14 +157,14 @@ class WaveAttenuationEnv(Env):
 
         return float(reward)
 
-    def get_state(self):
-        """See class definition."""
-        speed = [self.k.vehicle.get_speed(veh_id) / self.k.network.max_speed()
-                 for veh_id in self.k.vehicle.get_ids()]
-        pos = [self.k.vehicle.get_x_by_id(veh_id) / self.k.network.length()
-               for veh_id in self.k.vehicle.get_ids()]
+    # def get_state(self):
+    #     """See class definition."""
+    #     speed = [self.k.vehicle.get_speed(veh_id) / self.k.network.max_speed()
+    #              for veh_id in self.k.vehicle.get_ids()]
+    #     pos = [self.k.vehicle.get_x_by_id(veh_id) / self.k.network.length()
+    #            for veh_id in self.k.vehicle.get_ids()]
 
-        return np.array(speed + pos)
+    #     return np.array(speed + pos)
 
     def additional_command(self):
         """Define which vehicles are observed for visualization purposes."""
@@ -278,34 +278,34 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         # # print(f"identifier in state: {identifier}")
 
         # Save the avg and min velocity collectors to a file
-        if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
+        # if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
              
-            if not os.path.exists("./michael_files/results_lengthX/"):
-               os.mkdir("./michael_files/results_lengthX/")
+        #     if not os.path.exists("./michael_files/results_lengthX/"):
+        #        os.mkdir("./michael_files/results_lengthX/")
          
-            with open(f"./michael_files/results_lengthX/avg_velocity.txt", "a") as f:
-                np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
-                f.write("\n")
+        #     with open(f"./michael_files/results_lengthX/avg_velocity.txt", "a") as f:
+        #         np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
+        #         f.write("\n")
             
-            with open(f"./michael_files/results_lengthX/min_velocity.txt", "a") as f:
-                np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
-                f.write("\n")
+        #     with open(f"./michael_files/results_lengthX/min_velocity.txt", "a") as f:
+        #         np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
+        #         f.write("\n")
             
-            with open(f"./michael_files/results_lengthX/rl_velocity.txt", "a") as f:
-                np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
-                f.write("\n")
+        #     with open(f"./michael_files/results_lengthX/rl_velocity.txt", "a") as f:
+        #         np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
+        #         f.write("\n")
         
-            with open(f"./michael_files/results_lengthX/rl_accel_realized.txt", "a") as f:
-                np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
-                f.write("\n")
+        #     with open(f"./michael_files/results_lengthX/rl_accel_realized.txt", "a") as f:
+        #         np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
+        #         f.write("\n")
 
-        speed = np.asarray([self.k.vehicle.get_speed(veh_id) for veh_id in self.k.vehicle.get_ids()])
-        self.avg_velocity_collector.append(np.mean(speed))
-        self.min_velocity_collector.append(np.min(speed))
+        # speed = np.asarray([self.k.vehicle.get_speed(veh_id) for veh_id in self.k.vehicle.get_ids()])
+        # self.avg_velocity_collector.append(np.mean(speed))
+        # self.min_velocity_collector.append(np.min(speed))
 
-        rl_id = self.k.vehicle.get_rl_ids()[0]
-        self.rl_velocity_collector.append(self.k.vehicle.get_speed(rl_id))
-        self.rl_accel_realized_collector.append(self.k.vehicle.get_realized_accel(rl_id))
+        # rl_id = self.k.vehicle.get_rl_ids()[0]
+        # self.rl_velocity_collector.append(self.k.vehicle.get_speed(rl_id))
+        # self.rl_accel_realized_collector.append(self.k.vehicle.get_realized_accel(rl_id))
 
 
         '''
@@ -334,8 +334,8 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
             SUMO GUI Full Observations
             Following code uses screenshot from sumo-gui to train the model
         '''
-        # observation = Image.open(f"/home/michael/Desktop/flow_screenshots/state_{self.k.simulation.id}.jpeg")
-        # # observation = observation.crop((191, 0, 852, 661)) Keeping this line to save the numbers
+        # observation = Image.open(f"./sumo_obs/state_{self.k.simulation.id}.jpeg")
+        # observation = observation.convert("L")
         # observation = observation.resize((84,84)) # Resizing the image to be smaller
         # observation = np.asarray(observation) / 255.
 
@@ -366,14 +366,14 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         rl_id = self.k.vehicle.get_rl_ids()[0]
         x, y = self.k.vehicle.get_2d_position(rl_id)
         x, y = self.map_coordinates(x, y)
-        observation = Image.open(f"/home/michael/Desktop/flow/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+        observation = Image.open(f"./sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
         left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
         observation = observation.crop((left, upper, right, lower))
         observation = observation.convert("L")
         observation = observation.resize((84,84))
         # observation.save(f'./sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
         observation = np.asarray(observation)
-        observation = self.gaussian_noise(observation, 50)
+        # observation = self.gaussian_noise(observation, 50)
         height, width = observation.shape[0:2]
         sight_radius = height / 2
         mask = np.zeros((height, width), np.uint8)
@@ -442,6 +442,13 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         # observation = observation.convert("L")
         # observation = observation.resize((84,84))
         # observation = np.asarray(observation) / 255.
+
+        '''
+            All white observations to make sure that learning on images is working and that the policy
+            is not just randomly learning to do the correct behavior.
+        '''
+        # observation = np.zeros((84,84)) / 255.
+
        
 
         '''
@@ -472,6 +479,8 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         #     self.memory.insert(len(self.memory), observation)
 
         # return np.moveaxis(np.asarray(self.memory),0,-1)
+
+
 
         return observation
 
@@ -543,3 +552,6 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         img_noise = np.clip(img_noise, 0, 255)
         img_noise = img_noise.astype('uint8')
         return img_noise
+
+# Command to clear memory cache.
+# sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches'
