@@ -9,7 +9,7 @@ from flow.networks import FigureEightNetwork
 # time horizon of a single rollout
 HORIZON = 1500
 # number of rollouts per training iteration
-N_ROLLOUTS = 20
+N_ROLLOUTS = 10
 # number of parallel workers
 N_CPUS = 5
 
@@ -52,7 +52,11 @@ flow_params = dict(
     # sumo-related parameters (see flow.core.params.SumoParams)
     sim=SumoParams(
         sim_step=0.1,
-        render=False,
+        render=True,
+        save_render=False,
+        restart_instance=False,
+        sight_radius=42,
+        show_radius=False
     ),
 
     # environment related parameters (see flow.core.params.EnvParams)

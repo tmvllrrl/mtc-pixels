@@ -97,7 +97,7 @@ class AccelEnv(Env):
         return Box(
             low=0,
             high=1,
-            shape=(2 * self.initial_vehicles.num_vehicles, ),
+            shape=(84,84, ),
             dtype=np.float32)
 
     def _apply_rl_actions(self, rl_actions):
@@ -152,12 +152,12 @@ class AccelEnv(Env):
         '''
             Following code is the original code from Cathy Wu 
         '''
-        speed = [self.k.vehicle.get_speed(veh_id) / self.k.network.max_speed()
-                 for veh_id in self.sorted_ids]
-        pos = [self.k.vehicle.get_x_by_id(veh_id) / self.k.network.length()
-               for veh_id in self.sorted_ids]
+        # speed = [self.k.vehicle.get_speed(veh_id) / self.k.network.max_speed()
+        #          for veh_id in self.sorted_ids]
+        # pos = [self.k.vehicle.get_x_by_id(veh_id) / self.k.network.length()
+        #        for veh_id in self.sorted_ids]
 
-        observation = np.array(speed + pos)
+        # observation = np.array(speed + pos)
         
 
         '''
@@ -192,25 +192,25 @@ class AccelEnv(Env):
             Following code is another method for getting partial observations from the sumo-gui screenshots
             Uses the 2D position of the RL vehicle for a more accurate screenshot
         '''
-        # sight_radius = self.sim_params.sight_radius
-        # rl_id = self.k.vehicle.get_rl_ids()[0]
-        # x, y = self.k.vehicle.get_2d_position(rl_id)
-        # x, y = self.map_coordinates(x, y)
-        # observation = Image.open(f"./sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
-        # left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
-        # observation = observation.crop((left, upper, right, lower))
-        # observation = observation.convert("L")
-        # observation = observation.resize((84,84))
-        # # observation.save(f'./sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
-        # observation = np.asarray(observation)
-        # # observation = self.gaussian_noise(observation, 50)
-        # height, width = observation.shape[0:2]
-        # sight_radius = height / 2
-        # mask = np.zeros((height, width), np.uint8)
-        # cv2.circle(mask, (int(sight_radius), int(sight_radius)),
-        #            int(sight_radius), (255, 255, 255), thickness=-1)
-        # observation = cv2.bitwise_and(observation, observation, mask=mask)
-        # observation = observation / 255.
+        sight_radius = self.sim_params.sight_radius
+        rl_id = self.k.vehicle.get_rl_ids()[0]
+        x, y = self.k.vehicle.get_2d_position(rl_id)
+        x, y = self.map_coordinates(x, y)
+        observation = Image.open(f"./sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+        left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
+        observation = observation.crop((left, upper, right, lower))
+        observation = observation.convert("L")
+        observation = observation.resize((84,84))
+        # observation.save(f'./sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+        observation = np.asarray(observation)
+        # observation = self.gaussian_noise(observation, 50)
+        height, width = observation.shape[0:2]
+        sight_radius = height / 2
+        mask = np.zeros((height, width), np.uint8)
+        cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+                   int(sight_radius), (255, 255, 255), thickness=-1)
+        observation = cv2.bitwise_and(observation, observation, mask=mask)
+        observation = observation / 255.
 
         
 
