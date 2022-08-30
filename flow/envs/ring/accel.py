@@ -7,6 +7,7 @@ from gym.spaces.box import Box
 
 import numpy as np
 from PIL import Image
+import cv2
 
 ADDITIONAL_ENV_PARAMS = {
     # maximum acceleration for autonomous vehicles, in m/s^2
@@ -200,8 +201,18 @@ class AccelEnv(Env):
         # observation = Image.open(f"/home/michael/Desktop/flow/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
         # left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
         # observation = observation.crop((left, upper, right, lower))
+        # observation = observation.convert("L")
+        # observation = observation.resize((84,84))
         # # observation.save(f'./sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
-        # observation = np.asarray(observation) / 255.
+        # observation = np.asarray(observation)
+        # # observation = self.gaussian_noise(observation, 50)
+        # height, width = observation.shape[0:2]
+        # sight_radius = height / 2
+        # mask = np.zeros((height, width), np.uint8)
+        # cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+        #            int(sight_radius), (255, 255, 255), thickness=-1)
+        # observation = cv2.bitwise_and(observation, observation, mask=mask)
+        # observation = observation / 255.
 
         '''
             Pyglet Renderer Full Observations
