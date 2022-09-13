@@ -9,7 +9,7 @@ from flow.networks import FigureEightNetwork
 # time horizon of a single rollout
 HORIZON = 1500
 # number of rollouts per training iteration
-N_ROLLOUTS = 10
+N_ROLLOUTS = 20
 # number of parallel workers
 N_CPUS = 5
 
@@ -32,7 +32,7 @@ vehicles.add(
     routing_controller=(ContinuousRouter, {}),
     car_following_params=SumoCarFollowingParams(
         speed_mode="obey_safe_speed",
-        decel=1.5,
+        # decel=1.5,
     ),
     num_vehicles=1)
 
@@ -55,13 +55,20 @@ flow_params = dict(
         render=True,
         save_render=False,
         restart_instance=False,
-        sight_radius=42,
-        show_radius=False
+        sight_radius=40,
+        show_radius=False,
+        emission_path="./michael_files/emission_collection/"
     ),
+
+    # sim=SumoParams(
+    #     sim_step=0.1,
+    #     render=False
+    # ),
 
     # environment related parameters (see flow.core.params.EnvParams)
     env=EnvParams(
         horizon=HORIZON,
+        # warmup_steps=1500,
         additional_params={
             'target_velocity': 20,
             'max_accel': 3,

@@ -18,6 +18,7 @@ from copy import deepcopy
 WHITE = (255, 255, 255)
 CYAN = (0, 255, 255)
 RED = (255, 0, 0)
+YELLOW = (255, 255, 0)
 GREEN = (0, 255, 0)
 STEPS = 10
 rdelta = 255 / STEPS
@@ -1047,7 +1048,7 @@ class TraCIVehicle(KernelVehicle):
         # color vehicles white if not observed and cyan if observed
         for veh_id in self.get_human_ids():
             try:
-                color = CYAN if veh_id in self.get_observed_ids() else WHITE
+                color = CYAN if veh_id in self.get_observed_ids() else CYAN
                 # If vehicle is already being colored via argument to vehicles.add(), don't re-color it.
                 if self._force_color_update or 'color' not in \
                         self.type_parameters[self.get_type(veh_id)]:

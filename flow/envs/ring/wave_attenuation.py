@@ -97,7 +97,6 @@ class WaveAttenuationEnv(Env):
         self.rl_velocity_collector = []
         self.rl_accel_collector = []
         self.rl_accel_realized_collector = []
-        self.test = False
 
         self.memory = []
 
@@ -366,12 +365,12 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         rl_id = self.k.vehicle.get_rl_ids()[0]
         x, y = self.k.vehicle.get_2d_position(rl_id)
         x, y = self.map_coordinates(x, y)
-        observation = Image.open(f"./sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+        observation = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
         left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
         observation = observation.crop((left, upper, right, lower))
         observation = observation.convert("L")
         observation = observation.resize((84,84))
-        # observation.save(f'./sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+        # observation.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
         observation = np.asarray(observation)
         # observation = self.gaussian_noise(observation, 50)
         height, width = observation.shape[0:2]

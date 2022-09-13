@@ -7,6 +7,7 @@ from gym.spaces.box import Box
 
 import numpy as np
 import cv2
+import os
 from PIL import Image
 
 ADDITIONAL_ENV_PARAMS = {
@@ -79,6 +80,14 @@ class AccelEnv(Env):
         self.prev_pos = dict()
         self.absolute_position = dict()
 
+        self.avg_velocity_collector = []
+        self.min_velocity_collector = []
+        self.rl_velocity_collector = []
+        self.rl_accel_collector = []
+        self.rl_accel_realized_collector = []
+
+        self.results_dir_name = "trial_results"
+
         super().__init__(env_params, sim_params, network, simulator)
 
     @property
@@ -98,9 +107,11 @@ class AccelEnv(Env):
             low=0,
             high=1,
             shape=(84,84, ),
+            # shape=(2 * self.initial_vehicles.num_vehicles, ),
             dtype=np.float32)
 
     def _apply_rl_actions(self, rl_actions):
+        # print(rl_actions)
         """See class definition."""
         sorted_rl_ids = [
             veh_id for veh_id in self.sorted_ids
@@ -110,10 +121,42 @@ class AccelEnv(Env):
 
     def compute_reward(self, rl_actions, **kwargs):
         """See class definition."""
-        if self.env_params.evaluate:
-            return np.mean(self.k.vehicle.get_speed(self.k.vehicle.get_ids()))
-        else:
-            return rewards.desired_velocity(self, fail=kwargs['fail'])
+
+        '''
+            Original reward function within Accel class
+        '''
+        # if self.env_params.evaluate:
+        #     return np.mean(self.k.vehicle.get_speed(self.k.vehicle.get_ids()))
+        # else:
+        #     return rewards.desired_velocity(self, fail=kwargs['fail'])
+        
+        '''
+            Reward function from WaveAttenuation class to see its effects
+        '''
+        if rl_actions is None:
+            return 0
+
+        vel = np.array([
+            self.k.vehicle.get_speed(veh_id)
+            for veh_id in self.k.vehicle.get_ids()
+        ])
+
+        if any(vel < -100) or kwargs['fail']:
+            return 0.
+
+        # reward average velocity
+        eta_2 = 4.
+        reward = eta_2 * np.mean(vel) / 20
+
+        # punish accelerations (should lead to reduced stop-and-go waves)
+        eta = 4  # 0.25
+        mean_actions = np.mean(np.abs(np.array(rl_actions)))
+        accel_threshold = 0
+
+        if mean_actions > accel_threshold:
+            reward += eta * (accel_threshold - mean_actions)
+
+        return float(reward)
 
     def get_state(self):
         """See class definition."""
@@ -121,22 +164,22 @@ class AccelEnv(Env):
         # Save the avg and min velocity collectors to a file
         # if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
              
-        #     if not os.path.exists("./michael_files/results_lengthX/"):
-        #        os.mkdir("./michael_files/results_lengthX/")
+        #     if not os.path.exists(f"./michael_files/{self.results_dir_name}/"):
+        #        os.mkdir(f"./michael_files/{self.results_dir_name}/")
          
-        #     with open(f"./michael_files/results_lengthX/avg_velocity.txt", "a") as f:
+        #     with open(f"./michael_files/{self.results_dir_name}/avg_velocity.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
         #         f.write("\n")
             
-        #     with open(f"./michael_files/results_lengthX/min_velocity.txt", "a") as f:
+        #     with open(f"./michael_files/{self.results_dir_name}/min_velocity.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
         #         f.write("\n")
             
-        #     with open(f"./michael_files/results_lengthX/rl_velocity.txt", "a") as f:
+        #     with open(f"./michael_files/{self.results_dir_name}/rl_velocity.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
         #         f.write("\n")
         
-        #     with open(f"./michael_files/results_lengthX/rl_accel_realized.txt", "a") as f:
+        #     with open(f"./michael_files/{self.results_dir_name}/rl_accel_realized.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
         #         f.write("\n")
 
@@ -196,22 +239,21 @@ class AccelEnv(Env):
         rl_id = self.k.vehicle.get_rl_ids()[0]
         x, y = self.k.vehicle.get_2d_position(rl_id)
         x, y = self.map_coordinates(x, y)
-        observation = Image.open(f"./sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+        observation = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
         left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
         observation = observation.crop((left, upper, right, lower))
-        observation = observation.convert("L")
-        observation = observation.resize((84,84))
-        # observation.save(f'./sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+        observation = observation.convert("L") # Grayscale the image
+        observation = observation.resize((84,84)) # Resize to fit the convolution layers
         observation = np.asarray(observation)
-        # observation = self.gaussian_noise(observation, 50)
+        observation = self.cv2_clipped_zoom(observation, 1.5) # Zoom in on the image
         height, width = observation.shape[0:2]
         sight_radius = height / 2
         mask = np.zeros((height, width), np.uint8)
         cv2.circle(mask, (int(sight_radius), int(sight_radius)),
                    int(sight_radius), (255, 255, 255), thickness=-1)
         observation = cv2.bitwise_and(observation, observation, mask=mask)
+        # observation.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
         observation = observation / 255.
-
         
 
         '''
@@ -334,6 +376,12 @@ class AccelEnv(Env):
         This also includes updating the initial absolute position and previous
         position.
         """
+        self.avg_velocity_collector = []
+        self.min_velocity_collector = []
+        self.rl_velocity_collector = []
+        self.rl_accel_collector = []
+        self.rl_accel_realized_collector = []
+
         obs = super().reset()
 
         for veh_id in self.k.vehicle.get_ids():
@@ -341,3 +389,58 @@ class AccelEnv(Env):
             self.prev_pos[veh_id] = self.k.vehicle.get_x_by_id(veh_id)
 
         return obs
+
+    def map_coordinates(self, x, y):
+        offset, boundary_width = self.k.simulation.offset, self.k.simulation.boundary_width
+        half_width = boundary_width / 2
+
+        x, y = x - offset, y - offset
+        x, y = x + half_width, y + half_width
+        x, y = x / boundary_width, y / boundary_width
+        x, y = x * 300, 300 - (y * 300)
+
+        return x, y
+
+    def cv2_clipped_zoom(self, img, zoom_factor=0):
+
+        """
+        Center zoom in/out of the given image and returning an enlarged/shrinked view of 
+        the image without changing dimensions
+        ------
+        Args:
+            img : ndarray
+                Image array
+            zoom_factor : float
+                amount of zoom as a ratio [0 to Inf). Default 0.
+        ------
+        Returns:
+            result: ndarray
+            numpy ndarray of the same shape of the input img zoomed by the specified factor.          
+        """
+        if zoom_factor == 0:
+            return img
+
+
+        height, width = img.shape[:2] # It's also the final desired shape
+        new_height, new_width = int(height * zoom_factor), int(width * zoom_factor)
+        
+        ### Crop only the part that will remain in the result (more efficient)
+        # Centered bbox of the final desired size in resized (larger/smaller) image coordinates
+        y1, x1 = max(0, new_height - height) // 2, max(0, new_width - width) // 2
+        y2, x2 = y1 + height, x1 + width
+        bbox = np.array([y1,x1,y2,x2])
+        # Map back to original image coordinates
+        bbox = (bbox / zoom_factor).astype(np.int)
+        y1, x1, y2, x2 = bbox
+        cropped_img = img[y1:y2, x1:x2]
+        
+        # Handle padding when downscaling
+        resize_height, resize_width = min(new_height, height), min(new_width, width)
+        pad_height1, pad_width1 = (height - resize_height) // 2, (width - resize_width) //2
+        pad_height2, pad_width2 = (height - resize_height) - pad_height1, (width - resize_width) - pad_width1
+        pad_spec = [(pad_height1, pad_height2), (pad_width1, pad_width2)] + [(0,0)] * (img.ndim - 2)
+        
+        result = cv2.resize(cropped_img, (resize_width, resize_height))
+        result = np.pad(result, pad_spec, mode='constant')
+        assert result.shape[0] == height and result.shape[1] == width
+        return result
