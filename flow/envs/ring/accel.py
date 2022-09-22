@@ -86,6 +86,9 @@ class AccelEnv(Env):
         self.rl_accel_collector = []
         self.rl_accel_realized_collector = []
 
+        self.memory_buffer = []
+
+
         self.results_dir_name = "trial_results"
 
         super().__init__(env_params, sim_params, network, simulator)
@@ -106,7 +109,7 @@ class AccelEnv(Env):
         return Box(
             low=0,
             high=1,
-            shape=(84,84, ),
+            shape=(84,84,2, ),
             # shape=(2 * self.initial_vehicles.num_vehicles, ),
             dtype=np.float32)
 
@@ -149,7 +152,7 @@ class AccelEnv(Env):
         reward = eta_2 * np.mean(vel) / 20
 
         # punish accelerations (should lead to reduced stop-and-go waves)
-        eta = 4  # 0.25
+        eta = 3  # 0.25
         mean_actions = np.mean(np.abs(np.array(rl_actions)))
         accel_threshold = 0
 
@@ -235,26 +238,26 @@ class AccelEnv(Env):
             Following code is another method for getting partial observations from the sumo-gui screenshots
             Uses the 2D position of the RL vehicle for a more accurate screenshot
         '''
-        sight_radius = self.sim_params.sight_radius
-        rl_id = self.k.vehicle.get_rl_ids()[0]
-        x, y = self.k.vehicle.get_2d_position(rl_id)
-        x, y = self.map_coordinates(x, y)
-        observation = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
-        left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
-        observation = observation.crop((left, upper, right, lower))
-        observation = observation.convert("L") # Grayscale the image
-        observation = observation.resize((84,84)) # Resize to fit the convolution layers
-        observation = np.asarray(observation)
-        observation = self.cv2_clipped_zoom(observation, 1.5) # Zoom in on the image
-        height, width = observation.shape[0:2]
-        sight_radius = height / 2
-        mask = np.zeros((height, width), np.uint8)
-        cv2.circle(mask, (int(sight_radius), int(sight_radius)),
-                   int(sight_radius), (255, 255, 255), thickness=-1)
-        observation = cv2.bitwise_and(observation, observation, mask=mask)
-        # observation.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
-        observation = observation / 255.
-        
+        # sight_radius = self.sim_params.sight_radius
+        # rl_id = self.k.vehicle.get_rl_ids()[0]
+        # x, y = self.k.vehicle.get_2d_position(rl_id)
+        # x, y = self.map_coordinates(x, y)
+        # observation = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+        # left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
+        # observation = observation.crop((left, upper, right, lower))
+        # observation = observation.convert("L") # Grayscale the image
+        # observation = observation.resize((84,84)) # Resize to fit the convolution layers
+        # observation = np.asarray(observation)
+        # observation = self.cv2_clipped_zoom(observation, 1.5) # Zoom in on the image
+        # height, width = observation.shape[0:2]
+        # sight_radius = height / 2
+        # mask = np.zeros((height, width), np.uint8)
+        # cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+        #            int(sight_radius), (255, 255, 255), thickness=-1)
+        # observation = cv2.bitwise_and(observation, observation, mask=mask)
+        # # observation.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+        # observation = observation / 255.
+
 
         '''
             Pyglet Renderer Full Observations
@@ -381,6 +384,8 @@ class AccelEnv(Env):
         self.rl_velocity_collector = []
         self.rl_accel_collector = []
         self.rl_accel_realized_collector = []
+
+        self.memory_buffer = []
 
         obs = super().reset()
 
