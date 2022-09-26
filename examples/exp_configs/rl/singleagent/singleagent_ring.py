@@ -53,14 +53,14 @@ flow_params = dict(
         render=True,
         save_render=False,
         restart_instance=False,
-        sight_radius=42,
+        sight_radius=40,
         show_radius=False
     ),
 
     # environment related parameters (see flow.core.params.EnvParams)
     env=EnvParams(
         horizon=HORIZON,
-        warmup_steps=2500,
+        warmup_steps=3000,
         clip_actions=False,
         additional_params={
             "max_accel": 1,
