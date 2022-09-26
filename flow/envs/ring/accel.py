@@ -162,6 +162,8 @@ class AccelEnv(Env):
         pos = [self.k.vehicle.get_x_by_id(veh_id) / self.k.network.length()
                for veh_id in self.sorted_ids]
 
+        observation = np.array(speed + pos)
+
         '''
             SUMO GUI Full Observations
             Following code uses screenshot from sumo-gui to train the model
@@ -271,7 +273,7 @@ class AccelEnv(Env):
         # observation = np.zeros((84,84)) / 255.
 
 
-        return np.array(speed + pos)
+        return observation
 
     def additional_command(self):
         """See parent class.
