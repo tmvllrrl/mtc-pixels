@@ -10,7 +10,7 @@ from flow.envs import WaveAttenuationPOEnv
 from flow.networks import RingNetwork
 
 # time horizon of a single rollout
-HORIZON = 4000
+HORIZON = 3000
 # number of rollouts per training iteration
 N_ROLLOUTS = 5
 # number of parallel workers
@@ -36,7 +36,7 @@ vehicles.add(
 
 flow_params = dict(
     # name of the experiment
-    exp_tag="stabilizing_the_ring",
+    exp_tag="singleagent_onelane_ring",
 
     # name of the flow environment the experiment is running on
     env_name=WaveAttenuationPOEnv,
@@ -54,13 +54,14 @@ flow_params = dict(
         save_render=False,
         restart_instance=False,
         sight_radius=42,
-        show_radius=False
+        show_radius=False,
+        emission_path="./michael_files/emission_collection/"
     ),
 
     # environment related parameters (see flow.core.params.EnvParams)
     env=EnvParams(
         horizon=HORIZON,
-        warmup_steps=2500,
+        warmup_steps=3000,
         clip_actions=False,
         additional_params={
             "max_accel": 1,

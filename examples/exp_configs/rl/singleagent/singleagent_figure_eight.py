@@ -55,7 +55,7 @@ flow_params = dict(
         render=True,
         save_render=False,
         restart_instance=False,
-        sight_radius=40,
+        sight_radius=42,
         show_radius=False,
         emission_path="./michael_files/emission_collection/"
     ),

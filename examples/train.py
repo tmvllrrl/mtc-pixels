@@ -164,7 +164,7 @@ def setup_exps_rllib(flow_params,
     config["num_sgd_iter"] = 10
     config["horizon"] = horizon
     config["framework"] = "torch"
-    config["vf_clip_param"] = 10.0
+    # config["vf_clip_param"] = 10.0
     # config["model"]["use_lstm"] = True
     # config["exploration_config"]["type"] = "EpsilonGreedy"
     # config["vf_clip_param"] = 1000
