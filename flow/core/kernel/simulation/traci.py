@@ -100,21 +100,21 @@ class TraCISimulation(KernelSimulation):
     def simulation_step(self):
         """See parent class."""
         
-        if self.kernel_api.gui.getZoom() != 75: # This only occurs one time at the start of the simulation
-            self.kernel_api.gui.setZoom(traci.gui.DEFAULT_VIEW, 75)
-            self.kernel_api.gui.setSchema(traci.gui.DEFAULT_VIEW, "faster standard")
+        # if self.kernel_api.gui.getZoom() != 75: # This only occurs one time at the start of the simulation
+        #     self.kernel_api.gui.setZoom(traci.gui.DEFAULT_VIEW, 75)
+        #     self.kernel_api.gui.setSchema(traci.gui.DEFAULT_VIEW, "faster standard")
 
-            self.offset = self.kernel_api.gui.getOffset()[0]
+        #     self.offset = self.kernel_api.gui.getOffset()[0]
 
-            boundary = self.kernel_api.gui.getBoundary()
-            boundary_min = boundary[0][0]
-            boundary_max = boundary[1][0]
+        #     boundary = self.kernel_api.gui.getBoundary()
+        #     boundary_min = boundary[0][0]
+        #     boundary_max = boundary[1][0]
 
-            self.boundary_width = abs(boundary_min) + abs(boundary_max)
+        #     self.boundary_width = abs(boundary_min) + abs(boundary_max)
 
-        # self.id_timed = f"{self.id}{self.timestep}"
-        self.kernel_api.gui.screenshot(traci.gui.DEFAULT_VIEW, f"./michael_files/sumo_obs/state_{self.id}.jpeg")
-        # self.timestep = self.timestep + 1
+        # # self.id_timed = f"{self.id}{self.timestep}"
+        # self.kernel_api.gui.screenshot(traci.gui.DEFAULT_VIEW, f"./michael_files/sumo_obs/state_{self.id}.jpeg")
+        # # self.timestep = self.timestep + 1
 
         self.kernel_api.simulationStep()
         

@@ -11,6 +11,7 @@ from flow.core import rewards
 from gym.spaces.box import Box
 
 import numpy as np
+import os
 import collections
 
 ADDITIONAL_ENV_PARAMS = {
@@ -90,6 +91,13 @@ class MergePOEnv(Env):
         self.leader = []
         self.follower = []
 
+        self.avg_velocity_collector = []
+        self.min_velocity_collector = []    
+        self.rl_velocity_collector = []
+        self.rl_accel_realized_collector = []
+
+        self.results_dir_name = "trial_results"
+
         super().__init__(env_params, sim_params, network, simulator)
 
     @property
@@ -116,6 +124,39 @@ class MergePOEnv(Env):
 
     def get_state(self, rl_id=None, **kwargs):
         """See class definition."""
+
+        # Save the avg and min velocity collectors to a file
+        if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
+             
+            if not os.path.exists(f"./michael_files/{self.results_dir_name}/"):
+               os.mkdir(f"./michael_files/{self.results_dir_name}/")
+         
+            with open(f"./michael_files/{self.results_dir_name}/avg_velocity.txt", "a") as f:
+                np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
+                f.write("\n")
+            
+            with open(f"./michael_files/{self.results_dir_name}/min_velocity.txt", "a") as f:
+                np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
+                f.write("\n")
+            
+            with open(f"./michael_files/{self.results_dir_name}/rl_velocity.txt", "a") as f:
+                np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
+                f.write("\n")
+        
+            with open(f"./michael_files/{self.results_dir_name}/rl_accel_realized.txt", "a") as f:
+                np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
+                f.write("\n")
+
+        speed = np.asarray([self.k.vehicle.get_speed(veh_id) for veh_id in self.k.vehicle.get_ids()])
+        self.avg_velocity_collector.append(np.mean(speed))
+        self.min_velocity_collector.append(np.min(speed))
+
+        # Only looking at one RL AV for Merge networks
+        print(len(self.rl_veh))
+        if len(self.rl_veh) != 0: rl_id = self.rl_veh[0]
+        self.rl_velocity_collector.append(self.k.vehicle.get_speed(rl_id))
+        self.rl_accel_realized_collector.append(self.k.vehicle.get_realized_accel(rl_id))
+
         self.leader = []
         self.follower = []
 

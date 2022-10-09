@@ -344,9 +344,9 @@ class AccelEnv(Env):
         update the sorting of vehicles using the self.sorted_ids variable.
         """
         # specify observed vehicles
-        if self.k.vehicle.num_rl_vehicles > 0:
-            for veh_id in self.k.vehicle.get_human_ids():
-                self.k.vehicle.set_observed(veh_id)
+        # if self.k.vehicle.num_rl_vehicles > 0:
+        #     for veh_id in self.k.vehicle.get_human_ids():
+        #         self.k.vehicle.set_observed(veh_id)
 
         # update the "absolute_position" variable
         for veh_id in self.k.vehicle.get_ids():
