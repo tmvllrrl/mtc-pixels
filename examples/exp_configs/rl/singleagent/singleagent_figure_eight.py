@@ -9,7 +9,7 @@ from flow.networks import FigureEightNetwork
 # time horizon of a single rollout
 HORIZON = 1500
 # number of rollouts per training iteration
-N_ROLLOUTS = 20
+N_ROLLOUTS = 10
 # number of parallel workers
 N_CPUS = 5
 

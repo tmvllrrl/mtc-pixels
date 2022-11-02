@@ -362,7 +362,6 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
             Uses the 2D position of the RL vehicle for a more accurate screenshot
         '''
         # sight_radius = self.sim_params.sight_radius
-        # rl_id = self.k.vehicle.get_rl_ids()[0]
         # x, y = self.k.vehicle.get_2d_position(rl_id)
         # x, y = self.map_coordinates(x, y)
         # observation = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        

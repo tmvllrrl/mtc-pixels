@@ -95,6 +95,8 @@ flow_params = dict(
         restart_instance=True,
         sim_step=0.5,
         render=True,
+        sight_radius=42,
+        show_radius=False,
     ),
 
     # environment related parameters (see flow.core.params.EnvParams)
