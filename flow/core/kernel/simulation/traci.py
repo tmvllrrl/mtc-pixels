@@ -101,16 +101,22 @@ class TraCISimulation(KernelSimulation):
         """See parent class."""
         
         if self.kernel_api.gui.getZoom() != 95: # This only occurs one time at the start of the simulation
+<<<<<<< HEAD
+=======
+            # 85 for Merge, 75 for Ring/Figure8
+>>>>>>> 45ba339a35ad2740fb9ec6babd1e5d31fe54e2af
             self.kernel_api.gui.setZoom(traci.gui.DEFAULT_VIEW, 95)
             self.kernel_api.gui.setSchema(traci.gui.DEFAULT_VIEW, "faster standard")
 
             self.offset = self.kernel_api.gui.getOffset()[0]
+            # print(f"offset: {self.offset}")
 
             boundary = self.kernel_api.gui.getBoundary()
             boundary_min = boundary[0][0]
             boundary_max = boundary[1][0]
 
             self.boundary_width = abs(boundary_min) + abs(boundary_max)
+            # print(f"boundary width: {self.boundary_width}")
 
         # self.id_timed = f"{self.id}{self.timestep}"
         self.kernel_api.gui.screenshot(traci.gui.DEFAULT_VIEW, f"./michael_files/sumo_obs/state_{self.id}.jpeg")
@@ -267,7 +273,11 @@ class TraCISimulation(KernelSimulation):
                 sumo_call.append("true")
 
                 sumo_call.append("--window-size")
+<<<<<<< HEAD
                 sumo_call.append("2410,1071") # +2100, +500 for bottleneck
+=======
+                sumo_call.append("810,1071") # +1300,+300 for Merge, +500, +500 for grid
+>>>>>>> 45ba339a35ad2740fb9ec6babd1e5d31fe54e2af
 
                 # sumo_call.append("--gui-settings-file")
                 # sumo_call.append("/home/michael/Desktop/flow/viewsettings.xml")

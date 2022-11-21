@@ -9,9 +9,9 @@ from flow.networks import TrafficLightGridNetwork
 # time horizon of a single rollout
 HORIZON = 200
 # number of rollouts per training iteration
-N_ROLLOUTS = 30
+N_ROLLOUTS = 10
 # number of parallel workers
-N_CPUS = 2
+N_CPUS = 5
 # set to True if you would like to run the experiment with inflows of vehicles
 # from the edges, and False otherwise
 USE_INFLOWS = True
@@ -197,7 +197,7 @@ flow_params = dict(
     # sumo-related parameters (see flow.core.params.SumoParams)
     sim=SumoParams(
         sim_step=1,
-        render=False,
+        render=True,
     ),
 
     # environment related parameters (see flow.core.params.EnvParams)

@@ -479,9 +479,9 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
     def additional_command(self):
         """Define which vehicles are observed for visualization purposes."""
         # specify observed vehicles
-        rl_id = self.k.vehicle.get_rl_ids()[0]
-        lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
-        self.k.vehicle.set_observed(lead_id)
+        # rl_id = self.k.vehicle.get_rl_ids()[0]
+        # lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
+        # self.k.vehicle.set_observed(lead_id)
     
     def map_coordinates(self, x, y):
         offset, boundary_width = self.k.simulation.offset, self.k.simulation.boundary_width

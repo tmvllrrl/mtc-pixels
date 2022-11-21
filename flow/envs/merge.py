@@ -10,7 +10,10 @@ from flow.core import rewards
 
 from gym.spaces.box import Box
 
+from PIL import Image
 import numpy as np
+import os
+import cv2
 import collections
 
 ADDITIONAL_ENV_PARAMS = {
@@ -90,6 +93,13 @@ class MergePOEnv(Env):
         self.leader = []
         self.follower = []
 
+        self.avg_velocity_collector = []
+        self.min_velocity_collector = []    
+        self.rl_velocity_collector = []
+        self.rl_accel_realized_collector = []
+
+        self.results_dir_name = "trial_results"
+
         super().__init__(env_params, sim_params, network, simulator)
 
     @property
@@ -104,7 +114,12 @@ class MergePOEnv(Env):
     @property
     def observation_space(self):
         """See class definition."""
-        return Box(low=0, high=1, shape=(5 * self.num_rl, ), dtype=np.float32)
+        return Box(
+            low=-float('inf'), 
+            high=float('inf'), 
+            # shape=(84,84,5,),
+            shape=(5 * self.num_rl, ), 
+            dtype=np.float32)
 
     def _apply_rl_actions(self, rl_actions):
         """See class definition."""
@@ -116,6 +131,41 @@ class MergePOEnv(Env):
 
     def get_state(self, rl_id=None, **kwargs):
         """See class definition."""
+
+        # Save the avg and min velocity collectors to a file
+        if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
+             
+            if not os.path.exists(f"./michael_files/{self.results_dir_name}/"):
+               os.mkdir(f"./michael_files/{self.results_dir_name}/")
+         
+            with open(f"./michael_files/{self.results_dir_name}/avg_velocity.txt", "a") as f:
+                np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
+                f.write("\n")
+            
+            with open(f"./michael_files/{self.results_dir_name}/min_velocity.txt", "a") as f:
+                np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
+                f.write("\n")
+            
+            with open(f"./michael_files/{self.results_dir_name}/rl_velocity.txt", "a") as f:
+                np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
+                f.write("\n")
+        
+            with open(f"./michael_files/{self.results_dir_name}/rl_accel_realized.txt", "a") as f:
+                np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
+                f.write("\n")
+
+        speed = np.asarray([self.k.vehicle.get_speed(veh_id) for veh_id in self.k.vehicle.get_ids()])
+        self.avg_velocity_collector.append(np.mean(speed))
+        self.min_velocity_collector.append(np.min(speed))
+
+        # Only looking at one RL AV for Merge networks
+        if len(self.rl_veh) != 0: rl_id = self.rl_veh[0]
+        self.rl_velocity_collector.append(self.k.vehicle.get_speed(rl_id))
+        self.rl_accel_realized_collector.append(self.k.vehicle.get_realized_accel(rl_id))
+
+        '''
+            Original FLOW method for training with Merge
+        '''
         self.leader = []
         self.follower = []
 
@@ -154,6 +204,40 @@ class MergePOEnv(Env):
             observation[5 * i + 2] = lead_head / max_length
             observation[5 * i + 3] = (this_speed - follow_speed) / max_speed
             observation[5 * i + 4] = follow_head / max_length
+        
+        '''
+            Image based method for training with Merge
+        '''
+        # observation = np.zeros((5,84,84))
+        
+        # for i, rl_id in enumerate(self.rl_veh):
+        #     sight_radius = self.sim_params.sight_radius
+
+        #     if self.k.vehicle.get_2d_position(rl_id) != -1001:
+        #         x, y = self.k.vehicle.get_2d_position(rl_id)
+        #     else:
+        #         continue
+        #     x, y = self.map_coordinates(x, y)
+            
+        #     bev = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+        #     left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
+        #     bev = bev.crop((left, upper, right, lower))
+        #     bev = bev.convert("L").resize((84,84))
+        #     # bev.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+        #     bev = np.asarray(bev)
+        #     bev = self.cv2_clipped_zoom(bev, 1.5)
+        #     height, width = bev.shape[0:2]
+        #     sight_radius = height / 2
+        #     mask = np.zeros((height, width), np.uint8)
+        #     cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+        #                int(sight_radius), (255, 255, 255), thickness=-1)
+        #     bev = cv2.bitwise_and(bev, bev, mask=mask)
+        #     bev = bev / 255.
+
+        #     observation[i] = bev
+
+        # observation = np.moveaxis(observation, 0, -1)
+
 
         return observation
 
@@ -217,8 +301,8 @@ class MergePOEnv(Env):
             self.rl_veh.append(rl_id)
 
         # specify observed vehicles
-        for veh_id in self.leader + self.follower:
-            self.k.vehicle.set_observed(veh_id)
+        # for veh_id in self.leader + self.follower:
+        #     self.k.vehicle.set_observed(veh_id)
 
     def reset(self):
         """See parent class.
@@ -228,4 +312,65 @@ class MergePOEnv(Env):
         """
         self.leader = []
         self.follower = []
+
+        self.avg_velocity_collector = []
+        self.min_velocity_collector = []    
+        self.rl_velocity_collector = []
+        self.rl_accel_realized_collector = []
+
         return super().reset()
+
+    def map_coordinates(self, x, y):
+        offset, boundary_width = self.k.simulation.offset, self.k.simulation.boundary_width
+        half_width = boundary_width / 2
+
+        x, y = x - offset, y - offset
+        x, y = x + half_width, y + half_width
+        x, y = x / boundary_width, y / boundary_width
+        x, y = x * 1600, 687 - (y * 687)
+
+        return x, 193
+    
+    def cv2_clipped_zoom(self, img, zoom_factor=0):
+
+        """
+        Center zoom in/out of the given image and returning an enlarged/shrinked view of 
+        the image without changing dimensions
+        ------
+        Args:
+            img : ndarray
+                Image array
+            zoom_factor : float
+                amount of zoom as a ratio [0 to Inf). Default 0.
+        ------
+        Returns:
+            result: ndarray
+            numpy ndarray of the same shape of the input img zoomed by the specified factor.          
+        """
+        if zoom_factor == 0:
+            return img
+
+
+        height, width = img.shape[:2] # It's also the final desired shape
+        new_height, new_width = int(height * zoom_factor), int(width * zoom_factor)
+        
+        ### Crop only the part that will remain in the result (more efficient)
+        # Centered bbox of the final desired size in resized (larger/smaller) image coordinates
+        y1, x1 = max(0, new_height - height) // 2, max(0, new_width - width) // 2
+        y2, x2 = y1 + height, x1 + width
+        bbox = np.array([y1,x1,y2,x2])
+        # Map back to original image coordinates
+        bbox = (bbox / zoom_factor).astype(np.int)
+        y1, x1, y2, x2 = bbox
+        cropped_img = img[y1:y2, x1:x2]
+        
+        # Handle padding when downscaling
+        resize_height, resize_width = min(new_height, height), min(new_width, width)
+        pad_height1, pad_width1 = (height - resize_height) // 2, (width - resize_width) //2
+        pad_height2, pad_width2 = (height - resize_height) - pad_height1, (width - resize_width) - pad_width1
+        pad_spec = [(pad_height1, pad_height2), (pad_width1, pad_width2)] + [(0,0)] * (img.ndim - 2)
+        
+        result = cv2.resize(cropped_img, (resize_width, resize_height))
+        result = np.pad(result, pad_spec, mode='constant')
+        assert result.shape[0] == height and result.shape[1] == width
+        return result
