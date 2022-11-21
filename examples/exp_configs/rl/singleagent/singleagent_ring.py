@@ -55,7 +55,7 @@ flow_params = dict(
         restart_instance=False,
         sight_radius=42,
         show_radius=False,
-        emission_path="./michael_files/emission_collection/"
+        # emission_path="./michael_files/emission_collection/"
     ),
 
     # environment related parameters (see flow.core.params.EnvParams)

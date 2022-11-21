@@ -8,6 +8,8 @@ Control through Deep-RL: Applications to Bottleneck Decongestion," IEEE
 Intelligent Transportation Systems Conference (ITSC), 2018.
 """
 
+import collections
+import enum
 from flow.controllers.rlcontroller import RLController
 from flow.controllers.lane_change_controllers import SimLaneChangeController
 from flow.controllers.routing_controllers import ContinuousRouter
@@ -16,8 +18,10 @@ from flow.core.params import SumoCarFollowingParams, SumoLaneChangeParams
 from flow.core.params import VehicleParams
 
 from copy import deepcopy
+from PIL import Image
 
 import numpy as np
+import cv2
 from gym.spaces.box import Box
 
 from flow.core import rewards
@@ -266,6 +270,7 @@ class BottleneckEnv(Env):
         self.smoothed_num[self.outflow_index] = len(veh_ids)
         self.outflow_index = \
             (self.outflow_index + 1) % self.smoothed_num.shape[0]
+        
 
     def ramp_meter_lane_change_control(self):
         """Control lane change behavior of vehicles near the ramp meters.
@@ -840,6 +845,10 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
                         num_segments * controlled * num_lanes
                     ]
                 index += 1
+        
+        self.num_rl = 15
+        self.rl_queue = collections.deque()
+        self.rl_veh = []
 
     @property
     def observation_space(self):
@@ -850,7 +859,12 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
         for segment in self.obs_segments:
             num_obs += 4 * segment[1] * self.k.network.num_lanes(segment[0])
         num_obs += 1
-        return Box(low=0.0, high=1.0, shape=(num_obs, ), dtype=np.float32)
+        return Box(
+            low=0.0, 
+            high=2.0,
+            shape=(84,84,15,),
+            # shape=(num_obs, ), 
+            dtype=np.float32)
 
     @property
     def action_space(self):
@@ -891,59 +905,113 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
         Finally, we also append the total outflow of the bottleneck over the
         last 20 * self.sim_step seconds.
         """
-        num_vehicles_list = []
-        num_rl_vehicles_list = []
-        vehicle_speeds_list = []
-        rl_speeds_list = []
-        for i, edge in enumerate(EDGE_LIST):
-            num_lanes = self.k.network.num_lanes(edge)
-            num_vehicles = np.zeros((self.num_obs_segments[i], num_lanes))
-            num_rl_vehicles = np.zeros((self.num_obs_segments[i], num_lanes))
-            vehicle_speeds = np.zeros((self.num_obs_segments[i], num_lanes))
-            rl_vehicle_speeds = np.zeros((self.num_obs_segments[i], num_lanes))
-            ids = self.k.vehicle.get_ids_by_edge(edge)
-            lane_list = self.k.vehicle.get_lane(ids)
-            pos_list = self.k.vehicle.get_position(ids)
-            for i, id in enumerate(ids):
-                segment = np.searchsorted(self.obs_slices[edge],
-                                          pos_list[i]) - 1
-                if id in self.k.vehicle.get_rl_ids():
-                    rl_vehicle_speeds[segment, lane_list[i]] \
-                        += self.k.vehicle.get_speed(id)
-                    num_rl_vehicles[segment, lane_list[i]] += 1
-                else:
-                    vehicle_speeds[segment, lane_list[i]] \
-                        += self.k.vehicle.get_speed(id)
-                    num_vehicles[segment, lane_list[i]] += 1
+        # num_vehicles_list = []
+        # num_rl_vehicles_list = []
+        # vehicle_speeds_list = []
+        # rl_speeds_list = []
+        # for i, edge in enumerate(EDGE_LIST):
+        #     num_lanes = self.k.network.num_lanes(edge)
+        #     num_vehicles = np.zeros((self.num_obs_segments[i], num_lanes))
+        #     num_rl_vehicles = np.zeros((self.num_obs_segments[i], num_lanes))
+        #     vehicle_speeds = np.zeros((self.num_obs_segments[i], num_lanes))
+        #     rl_vehicle_speeds = np.zeros((self.num_obs_segments[i], num_lanes))
+        #     ids = self.k.vehicle.get_ids_by_edge(edge)
+        #     lane_list = self.k.vehicle.get_lane(ids)
+        #     pos_list = self.k.vehicle.get_position(ids)
+        #     for i, id in enumerate(ids):
+        #         segment = np.searchsorted(self.obs_slices[edge],
+        #                                   pos_list[i]) - 1
+        #         if id in self.k.vehicle.get_rl_ids():
+        #             rl_vehicle_speeds[segment, lane_list[i]] \
+        #                 += self.k.vehicle.get_speed(id)
+        #             num_rl_vehicles[segment, lane_list[i]] += 1
+        #         else:
+        #             vehicle_speeds[segment, lane_list[i]] \
+        #                 += self.k.vehicle.get_speed(id)
+        #             num_vehicles[segment, lane_list[i]] += 1
 
-            # normalize
+        #     # normalize
 
-            num_vehicles /= NUM_VEHICLE_NORM
-            num_rl_vehicles /= NUM_VEHICLE_NORM
-            num_vehicles_list += num_vehicles.flatten().tolist()
-            num_rl_vehicles_list += num_rl_vehicles.flatten().tolist()
-            vehicle_speeds_list += vehicle_speeds.flatten().tolist()
-            rl_speeds_list += rl_vehicle_speeds.flatten().tolist()
+        #     num_vehicles /= NUM_VEHICLE_NORM
+        #     num_rl_vehicles /= NUM_VEHICLE_NORM
+        #     num_vehicles_list += num_vehicles.flatten().tolist()
+        #     num_rl_vehicles_list += num_rl_vehicles.flatten().tolist()
+        #     vehicle_speeds_list += vehicle_speeds.flatten().tolist()
+        #     rl_speeds_list += rl_vehicle_speeds.flatten().tolist()
 
-        unnorm_veh_list = np.asarray(num_vehicles_list) * NUM_VEHICLE_NORM
-        unnorm_rl_list = np.asarray(num_rl_vehicles_list) * NUM_VEHICLE_NORM
+        # unnorm_veh_list = np.asarray(num_vehicles_list) * NUM_VEHICLE_NORM
+        # unnorm_rl_list = np.asarray(num_rl_vehicles_list) * NUM_VEHICLE_NORM
 
-        # compute the mean speed if the speed isn't zero
-        num_rl = len(num_rl_vehicles_list)
-        num_veh = len(num_vehicles_list)
-        mean_speed = np.nan_to_num([
-            vehicle_speeds_list[i] / unnorm_veh_list[i]
-            if int(unnorm_veh_list[i]) else 0 for i in range(num_veh)
-        ])
-        mean_speed_norm = mean_speed / 50
-        mean_rl_speed = np.nan_to_num([
-            rl_speeds_list[i] / unnorm_rl_list[i]
-            if int(unnorm_rl_list[i]) else 0 for i in range(num_rl)
-        ]) / 50
-        outflow = np.asarray(
-            self.k.vehicle.get_outflow_rate(20 * self.sim_step) / 2000.0)
-        return np.concatenate((num_vehicles_list, num_rl_vehicles_list,
-                               mean_speed_norm, mean_rl_speed, [outflow]))
+        # # compute the mean speed if the speed isn't zero
+        # num_rl = len(num_rl_vehicles_list)
+        # num_veh = len(num_vehicles_list)
+        # mean_speed = np.nan_to_num([
+        #     vehicle_speeds_list[i] / unnorm_veh_list[i]
+        #     if int(unnorm_veh_list[i]) else 0 for i in range(num_veh)
+        # ])
+        # mean_speed_norm = mean_speed / 50
+        # mean_rl_speed = np.nan_to_num([
+        #     rl_speeds_list[i] / unnorm_rl_list[i]
+        #     if int(unnorm_rl_list[i]) else 0 for i in range(num_rl)
+        # ]) / 50
+        # outflow = np.asarray(
+        #     self.k.vehicle.get_outflow_rate(20 * self.sim_step) / 2000.0)
+
+        # observation = np.concatenate((num_vehicles_list, num_rl_vehicles_list,
+        #                        mean_speed_norm, mean_rl_speed, [outflow]))
+
+        '''
+            Image-based way
+        '''
+       #  add rl vehicles that just entered the network into the rl queue
+        for veh_id in self.k.vehicle.get_rl_ids():
+            if veh_id not in list(self.rl_queue) + self.rl_veh:
+                self.rl_queue.append(veh_id)
+
+        # remove rl vehicles that exited the network
+        for veh_id in list(self.rl_queue):
+            if veh_id not in self.k.vehicle.get_rl_ids():
+                self.rl_queue.remove(veh_id)
+        for veh_id in self.rl_veh:
+            if veh_id not in self.k.vehicle.get_rl_ids():
+                self.rl_veh.remove(veh_id)
+
+        # fil up rl_veh until they are enough controlled vehicles
+        while len(self.rl_queue) > 0 and len(self.rl_veh) < self.num_rl:
+            rl_id = self.rl_queue.popleft()
+            self.rl_veh.append(rl_id)
+        
+        observation = np.zeros((15,84,84)) 
+
+        for i, rl_id in enumerate(self.rl_veh):
+            sight_radius = self.sim_params.sight_radius
+
+            if self.k.vehicle.get_2d_position(rl_id) != -1001:
+                x, y = self.k.vehicle.get_2d_position(rl_id)
+            else:
+                continue
+            x, y = self.map_coordinates(x,y)
+
+            bev = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+            left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
+            bev = bev.crop((left, upper, right, lower))
+            bev = bev.convert("L").resize((84,84))
+            bev.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+            bev = np.asarray(bev)
+            bev = self.cv2_clipped_zoom(bev, 1.5)
+            height, width = bev.shape[0:2]
+            sight_radius = height / 2
+            mask = np.zeros((height, width), np.uint8)
+            cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+                       int(sight_radius), (255, 255, 255), thickness=-1)
+            bev = cv2.bitwise_and(bev, bev, mask=mask)
+            bev = bev / 255.
+
+            observation[i] = bev
+        
+        observation = np.moveaxis(observation, 0, -1)
+
+        return observation
 
     def _apply_rl_actions(self, rl_actions):
         """
@@ -991,6 +1059,62 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
             reward = self.k.vehicle.get_outflow_rate(10 * self.sim_step) / \
                 (2000.0 * self.scaling)
         return reward
+        
+    
+    def map_coordinates(self, x, y):
+        offset, boundary_width = self.k.simulation.offset, self.k.simulation.boundary_width
+        half_width = boundary_width / 2
+
+        x, y = x - offset, y - offset
+        x, y = x + half_width, y + half_width
+        x, y = x / boundary_width, y / boundary_width
+        x, y = x * 2400, 800 - (y * 800)
+
+        return x, 440
+
+    def cv2_clipped_zoom(self, img, zoom_factor=0):
+
+        """
+        Center zoom in/out of the given image and returning an enlarged/shrinked view of 
+        the image without changing dimensions
+        ------
+        Args:
+            img : ndarray
+                Image array
+            zoom_factor : float
+                amount of zoom as a ratio [0 to Inf). Default 0.
+        ------
+        Returns:
+            result: ndarray
+            numpy ndarray of the same shape of the input img zoomed by the specified factor.          
+        """
+        if zoom_factor == 0:
+            return img
+
+
+        height, width = img.shape[:2] # It's also the final desired shape
+        new_height, new_width = int(height * zoom_factor), int(width * zoom_factor)
+        
+        ### Crop only the part that will remain in the result (more efficient)
+        # Centered bbox of the final desired size in resized (larger/smaller) image coordinates
+        y1, x1 = max(0, new_height - height) // 2, max(0, new_width - width) // 2
+        y2, x2 = y1 + height, x1 + width
+        bbox = np.array([y1,x1,y2,x2])
+        # Map back to original image coordinates
+        bbox = (bbox / zoom_factor).astype(np.int)
+        y1, x1, y2, x2 = bbox
+        cropped_img = img[y1:y2, x1:x2]
+        
+        # Handle padding when downscaling
+        resize_height, resize_width = min(new_height, height), min(new_width, width)
+        pad_height1, pad_width1 = (height - resize_height) // 2, (width - resize_width) //2
+        pad_height2, pad_width2 = (height - resize_height) - pad_height1, (width - resize_width) - pad_width1
+        pad_spec = [(pad_height1, pad_height2), (pad_width1, pad_width2)] + [(0,0)] * (img.ndim - 2)
+        
+        result = cv2.resize(cropped_img, (resize_width, resize_height))
+        result = np.pad(result, pad_spec, mode='constant')
+        assert result.shape[0] == height and result.shape[1] == width
+        return result
 
     def reset(self):
         """Reset the environment with a new inflow rate.
