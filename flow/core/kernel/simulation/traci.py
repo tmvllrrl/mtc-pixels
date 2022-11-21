@@ -101,10 +101,7 @@ class TraCISimulation(KernelSimulation):
         """See parent class."""
         
         if self.kernel_api.gui.getZoom() != 95: # This only occurs one time at the start of the simulation
-<<<<<<< HEAD
-=======
             # 85 for Merge, 75 for Ring/Figure8
->>>>>>> 45ba339a35ad2740fb9ec6babd1e5d31fe54e2af
             self.kernel_api.gui.setZoom(traci.gui.DEFAULT_VIEW, 95)
             self.kernel_api.gui.setSchema(traci.gui.DEFAULT_VIEW, "faster standard")
 
@@ -273,11 +270,7 @@ class TraCISimulation(KernelSimulation):
                 sumo_call.append("true")
 
                 sumo_call.append("--window-size")
-<<<<<<< HEAD
-                sumo_call.append("2410,1071") # +2100, +500 for bottleneck
-=======
-                sumo_call.append("810,1071") # +1300,+300 for Merge, +500, +500 for grid
->>>>>>> 45ba339a35ad2740fb9ec6babd1e5d31fe54e2af
+                sumo_call.append("810,1071") # +1300,+300 for Merge, +500, +500 for grid, +2100, +500 for bottleneck
 
                 # sumo_call.append("--gui-settings-file")
                 # sumo_call.append("/home/michael/Desktop/flow/viewsettings.xml")
