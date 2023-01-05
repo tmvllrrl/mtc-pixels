@@ -1,23 +1,26 @@
-"""Bottleneck example.
+"""Benchmark for bottleneck0.
 
-Bottleneck in which the actions are specifying a desired velocity
-in a segment of space
+Bottleneck in which the actions are specifying a desired velocity in a segment
+of space. The autonomous penetration rate in this example is 10%.
+
+- **Action Dimension**: (?, )
+- **Observation Dimension**: (?, )
+- **Horizon**: 1000 steps
 """
+from flow.envs import BottleneckDesiredVelocityEnv
+from flow.networks import BottleneckNetwork
 from flow.core.params import SumoParams, EnvParams, InitialConfig, NetParams, \
     InFlows, SumoCarFollowingParams, SumoLaneChangeParams
 from flow.core.params import TrafficLightParams
 from flow.core.params import VehicleParams
-from flow.controllers import RLController, ContinuousRouter, \
-    SimLaneChangeController
-from flow.envs import BottleneckDesiredVelocityEnv
-from flow.networks import BottleneckNetwork
+from flow.controllers import RLController, ContinuousRouter
 
 # time horizon of a single rollout
 HORIZON = 1000
-# number of parallel workers
+
 N_CPUS = 5
 # number of rollouts per training iteration
-N_ROLLOUTS = N_CPUS * 2
+N_ROLLOUTS = 10
 
 SCALING = 1
 NUM_LANES = 4 * SCALING  # number of lanes in the widest highway
@@ -28,19 +31,17 @@ AV_FRAC = 0.10
 vehicles = VehicleParams()
 vehicles.add(
     veh_id="human",
-    lane_change_controller=(SimLaneChangeController, {}),
     routing_controller=(ContinuousRouter, {}),
     car_following_params=SumoCarFollowingParams(
-        speed_mode="all_checks",
+        speed_mode=9,
     ),
     lane_change_params=SumoLaneChangeParams(
         lane_change_mode=0,
     ),
     num_vehicles=1 * SCALING)
 vehicles.add(
-    veh_id="followerstopper",
+    veh_id="rl",
     acceleration_controller=(RLController, {}),
-    lane_change_controller=(SimLaneChangeController, {}),
     routing_controller=(ContinuousRouter, {}),
     car_following_params=SumoCarFollowingParams(
         speed_mode=9,
@@ -53,6 +54,7 @@ vehicles.add(
 controlled_segments = [("1", 1, False), ("2", 2, True), ("3", 2, True),
                        ("4", 2, True), ("5", 1, False)]
 num_observed_segments = [("1", 1), ("2", 3), ("3", 3), ("4", 3), ("5", 1)]
+
 additional_env_params = {
     "target_velocity": 40,
     "disable_tb": True,
@@ -64,11 +66,11 @@ additional_env_params = {
     "lane_change_duration": 5,
     "max_accel": 3,
     "max_decel": 3,
-    "inflow_range": [1000, 2000]
+    "inflow_range": [1200, 2500]
 }
 
 # flow rate
-flow_rate = 2300 * SCALING
+flow_rate = 2500 * SCALING
 
 # percentage of flow coming out of each lane
 inflow = InFlows()
@@ -79,7 +81,7 @@ inflow.add(
     departLane="random",
     departSpeed=10)
 inflow.add(
-    veh_type="followerstopper",
+    veh_type="rl",
     edge="1",
     vehs_per_hour=flow_rate * AV_FRAC,
     departLane="random",
@@ -98,7 +100,7 @@ net_params = NetParams(
 
 flow_params = dict(
     # name of the experiment
-    exp_tag="DesiredVelocity",
+    exp_tag="bottleneck_0",
 
     # name of the flow environment the experiment is running on
     env_name=BottleneckDesiredVelocityEnv,

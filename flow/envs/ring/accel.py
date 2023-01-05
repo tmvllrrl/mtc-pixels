@@ -244,7 +244,6 @@ class AccelEnv(Env):
         observation = np.asarray(observation)
         observation = observation / 255.
 
-
         '''
             All white observations to make sure that learning on images is working and that the policy
             is not just randomly learning to do the correct behavior.

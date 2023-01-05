@@ -151,7 +151,7 @@ def setup_exps_rllib(flow_params,
     # config["train_batch_size"] = 256
     config["gamma"] = 0.999  # discount rate
     # print(f"config[model]: {config['model']}")
-    # config["model"].update({"fcnet_hiddens": [32, 32, 32]})
+    # config["model"].update({"fcnet_hiddens": [256, 256, 128]}) # change for bottleneck
     config["model"].update({"conv_filters":  [
         [16, [8, 8], 4],
         [32, [4, 4], 2],
