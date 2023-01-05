@@ -117,8 +117,8 @@ class MergePOEnv(Env):
         return Box(
             low=-float('inf'), 
             high=float('inf'), 
-            # shape=(84,84,5,),
-            shape=(5 * self.num_rl, ), 
+            shape=(84,84,5,),
+            # shape=(5 * self.num_rl, ), 
             dtype=np.float32)
 
     def _apply_rl_actions(self, rl_actions):
@@ -133,110 +133,110 @@ class MergePOEnv(Env):
         """See class definition."""
 
         # Save the avg and min velocity collectors to a file
-        if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
+        # if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
              
-            if not os.path.exists(f"./michael_files/{self.results_dir_name}/"):
-               os.mkdir(f"./michael_files/{self.results_dir_name}/")
+        #     if not os.path.exists(f"./michael_files/{self.results_dir_name}/"):
+        #        os.mkdir(f"./michael_files/{self.results_dir_name}/")
          
-            with open(f"./michael_files/{self.results_dir_name}/avg_velocity.txt", "a") as f:
-                np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
-                f.write("\n")
+        #     with open(f"./michael_files/{self.results_dir_name}/avg_velocity.txt", "a") as f:
+        #         np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
+        #         f.write("\n")
             
-            with open(f"./michael_files/{self.results_dir_name}/min_velocity.txt", "a") as f:
-                np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
-                f.write("\n")
+        #     with open(f"./michael_files/{self.results_dir_name}/min_velocity.txt", "a") as f:
+        #         np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
+        #         f.write("\n")
             
-            with open(f"./michael_files/{self.results_dir_name}/rl_velocity.txt", "a") as f:
-                np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
-                f.write("\n")
+        #     with open(f"./michael_files/{self.results_dir_name}/rl_velocity.txt", "a") as f:
+        #         np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
+        #         f.write("\n")
         
-            with open(f"./michael_files/{self.results_dir_name}/rl_accel_realized.txt", "a") as f:
-                np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
-                f.write("\n")
+        #     with open(f"./michael_files/{self.results_dir_name}/rl_accel_realized.txt", "a") as f:
+        #         np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
+        #         f.write("\n")
 
-        speed = np.asarray([self.k.vehicle.get_speed(veh_id) for veh_id in self.k.vehicle.get_ids()])
-        self.avg_velocity_collector.append(np.mean(speed))
-        self.min_velocity_collector.append(np.min(speed))
+        # speed = np.asarray([self.k.vehicle.get_speed(veh_id) for veh_id in self.k.vehicle.get_ids()])
+        # self.avg_velocity_collector.append(np.mean(speed))
+        # self.min_velocity_collector.append(np.min(speed))
 
-        # Only looking at one RL AV for Merge networks
-        if len(self.rl_veh) != 0: rl_id = self.rl_veh[0]
-        self.rl_velocity_collector.append(self.k.vehicle.get_speed(rl_id))
-        self.rl_accel_realized_collector.append(self.k.vehicle.get_realized_accel(rl_id))
+        # # Only looking at one RL AV for Merge networks
+        # if len(self.rl_veh) != 0: rl_id = self.rl_veh[0]
+        # self.rl_velocity_collector.append(self.k.vehicle.get_speed(rl_id))
+        # self.rl_accel_realized_collector.append(self.k.vehicle.get_realized_accel(rl_id))
 
         '''
             Original FLOW method for training with Merge
         '''
-        self.leader = []
-        self.follower = []
+        # self.leader = []
+        # self.follower = []
 
-        # normalizing constants
-        max_speed = self.k.network.max_speed()
-        max_length = self.k.network.length()
+        # # normalizing constants
+        # max_speed = self.k.network.max_speed()
+        # max_length = self.k.network.length()
 
-        observation = [0 for _ in range(5 * self.num_rl)]
-        for i, rl_id in enumerate(self.rl_veh):
-            this_speed = self.k.vehicle.get_speed(rl_id)
-            lead_id = self.k.vehicle.get_leader(rl_id)
-            follower = self.k.vehicle.get_follower(rl_id)
+        # observation = [0 for _ in range(5 * self.num_rl)]
+        # for i, rl_id in enumerate(self.rl_veh):
+        #     this_speed = self.k.vehicle.get_speed(rl_id)
+        #     lead_id = self.k.vehicle.get_leader(rl_id)
+        #     follower = self.k.vehicle.get_follower(rl_id)
 
-            if lead_id in ["", None]:
-                # in case leader is not visible
-                lead_speed = max_speed
-                lead_head = max_length
-            else:
-                self.leader.append(lead_id)
-                lead_speed = self.k.vehicle.get_speed(lead_id)
-                lead_head = self.k.vehicle.get_x_by_id(lead_id) \
-                    - self.k.vehicle.get_x_by_id(rl_id) \
-                    - self.k.vehicle.get_length(rl_id)
+        #     if lead_id in ["", None]:
+        #         # in case leader is not visible
+        #         lead_speed = max_speed
+        #         lead_head = max_length
+        #     else:
+        #         self.leader.append(lead_id)
+        #         lead_speed = self.k.vehicle.get_speed(lead_id)
+        #         lead_head = self.k.vehicle.get_x_by_id(lead_id) \
+        #             - self.k.vehicle.get_x_by_id(rl_id) \
+        #             - self.k.vehicle.get_length(rl_id)
 
-            if follower in ["", None]:
-                # in case follower is not visible
-                follow_speed = 0
-                follow_head = max_length
-            else:
-                self.follower.append(follower)
-                follow_speed = self.k.vehicle.get_speed(follower)
-                follow_head = self.k.vehicle.get_headway(follower)
+        #     if follower in ["", None]:
+        #         # in case follower is not visible
+        #         follow_speed = 0
+        #         follow_head = max_length
+        #     else:
+        #         self.follower.append(follower)
+        #         follow_speed = self.k.vehicle.get_speed(follower)
+        #         follow_head = self.k.vehicle.get_headway(follower)
 
-            observation[5 * i + 0] = this_speed / max_speed
-            observation[5 * i + 1] = (lead_speed - this_speed) / max_speed
-            observation[5 * i + 2] = lead_head / max_length
-            observation[5 * i + 3] = (this_speed - follow_speed) / max_speed
-            observation[5 * i + 4] = follow_head / max_length
+        #     observation[5 * i + 0] = this_speed / max_speed
+        #     observation[5 * i + 1] = (lead_speed - this_speed) / max_speed
+        #     observation[5 * i + 2] = lead_head / max_length
+        #     observation[5 * i + 3] = (this_speed - follow_speed) / max_speed
+        #     observation[5 * i + 4] = follow_head / max_length
         
         '''
             Image based method for training with Merge
         '''
-        # observation = np.zeros((5,84,84))
+        observation = np.zeros((5,84,84))
         
-        # for i, rl_id in enumerate(self.rl_veh):
-        #     sight_radius = self.sim_params.sight_radius
+        for i, rl_id in enumerate(self.rl_veh):
+            sight_radius = self.sim_params.sight_radius
 
-        #     if self.k.vehicle.get_2d_position(rl_id) != -1001:
-        #         x, y = self.k.vehicle.get_2d_position(rl_id)
-        #     else:
-        #         continue
-        #     x, y = self.map_coordinates(x, y)
+            if self.k.vehicle.get_2d_position(rl_id) != -1001:
+                x, y = self.k.vehicle.get_2d_position(rl_id)
+            else:
+                continue
+            x, y = self.map_coordinates(x, y)
             
-        #     bev = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
-        #     left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
-        #     bev = bev.crop((left, upper, right, lower))
-        #     bev = bev.convert("L").resize((84,84))
-        #     # bev.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
-        #     bev = np.asarray(bev)
-        #     bev = self.cv2_clipped_zoom(bev, 1.5)
-        #     height, width = bev.shape[0:2]
-        #     sight_radius = height / 2
-        #     mask = np.zeros((height, width), np.uint8)
-        #     cv2.circle(mask, (int(sight_radius), int(sight_radius)),
-        #                int(sight_radius), (255, 255, 255), thickness=-1)
-        #     bev = cv2.bitwise_and(bev, bev, mask=mask)
-        #     bev = bev / 255.
+            bev = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+            left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
+            bev = bev.crop((left, upper, right, lower))
+            bev = bev.convert("L").resize((84,84))
+            # bev.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+            bev = np.asarray(bev)
+            bev = self.cv2_clipped_zoom(bev, 1.5)
+            height, width = bev.shape[0:2]
+            sight_radius = height / 2
+            mask = np.zeros((height, width), np.uint8)
+            cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+                       int(sight_radius), (255, 255, 255), thickness=-1)
+            bev = cv2.bitwise_and(bev, bev, mask=mask)
+            bev = bev / 255.
 
-        #     observation[i] = bev
+            observation[i] = bev
 
-        # observation = np.moveaxis(observation, 0, -1)
+        observation = np.moveaxis(observation, 0, -1)
 
 
         return observation

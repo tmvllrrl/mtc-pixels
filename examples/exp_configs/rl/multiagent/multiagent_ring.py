@@ -16,9 +16,9 @@ from flow.utils.registry import make_create_env
 # time horizon of a single rollout
 HORIZON = 3000
 # number of rollouts per training iteration
-N_ROLLOUTS = 20
+N_ROLLOUTS = 10
 # number of parallel workers
-N_CPUS = 2
+N_CPUS = 5
 # number of automated vehicles. Must be less than or equal to 22.
 NUM_AUTOMATED = 2
 
@@ -67,14 +67,15 @@ flow_params = dict(
     # sumo-related parameters (see flow.core.params.SumoParams)
     sim=SumoParams(
         sim_step=0.1,
-        render=False,
+        render=True,
+        sight_radius=42,
         restart_instance=False
     ),
 
     # environment related parameters (see flow.core.params.EnvParams)
     env=EnvParams(
         horizon=HORIZON,
-        warmup_steps=750,
+        warmup_steps=3000,
         clip_actions=False,
         additional_params={
             "max_accel": 1,

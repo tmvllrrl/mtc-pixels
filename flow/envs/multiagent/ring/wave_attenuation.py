@@ -14,6 +14,9 @@ import random
 from scipy.optimize import fsolve
 from copy import deepcopy
 
+import cv2
+from pillow import Image
+
 from flow.core.params import InitialConfig
 from flow.core.params import NetParams
 from flow.envs.multiagent.base import MultiEnv
@@ -57,7 +60,11 @@ class MultiWaveAttenuationPOEnv(MultiEnv):
     @property
     def observation_space(self):
         """See class definition."""
-        return Box(low=-1, high=1, shape=(3,), dtype=np.float32)
+        return Box(low=-1, 
+                high=1,
+                shape=(84,84,), 
+                # shape=(3,), 
+                dtype=np.float32)
 
     @property
     def action_space(self):
@@ -182,7 +189,11 @@ class MultiAgentWaveAttenuationPOEnv(MultiEnv):
     @property
     def observation_space(self):
         """See class definition."""
-        return Box(low=-5, high=5, shape=(3,), dtype=np.float32)
+        return Box(low=-5, 
+                high=5, 
+                shape=(84,84,),
+                # shape=(3,), 
+                dtype=np.float32)
 
     @property
     def action_space(self):
@@ -195,21 +206,51 @@ class MultiAgentWaveAttenuationPOEnv(MultiEnv):
 
     def get_state(self):
         """See class definition."""
+        '''
+            Original Wu methodology
+        '''
+        # obs = {}
+        # for rl_id in self.k.vehicle.get_rl_ids():
+        #     lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
+
+        #     # normalizers
+        #     max_speed = 15.
+        #     max_length = self.env_params.additional_params['ring_length'][1]
+
+        #     observation = np.array([
+        #         self.k.vehicle.get_speed(rl_id) / max_speed,
+        #         (self.k.vehicle.get_speed(lead_id) -
+        #          self.k.vehicle.get_speed(rl_id))
+        #         / max_speed,
+        #         self.k.vehicle.get_headway(rl_id) / max_length
+        #     ])
+        #     obs.update({rl_id: observation})
+
+        '''
+            Image-based method
+        '''
         obs = {}
         for rl_id in self.k.vehicle.get_rl_ids():
-            lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
+            sight_radius = self.sim_params.sight_radius
+            rl_id = self.k.vehicle.get_rl_ids()[0]
+            x, y = self.k.vehicle.get_2d_position(rl_id)
+            x, y = self.map_coordinates(x, y)
+            observation = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+            left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
+            observation = observation.crop((left, upper, right, lower))
+            observation = observation.convert("L")
+            observation = observation.resize((84,84))
+            # observation.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+            observation = np.asarray(observation)
+            observation = self.cv2_clipped_zoom(observation, 1.5)
+            height, width = observation.shape[0:2]
+            sight_radius = height / 2
+            mask = np.zeros((height, width), np.uint8)
+            cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+                    int(sight_radius), (255, 255, 255), thickness=-1)
+            observation = cv2.bitwise_and(observation, observation, mask=mask)
+            observation = observation / 255.
 
-            # normalizers
-            max_speed = 15.
-            max_length = self.env_params.additional_params['ring_length'][1]
-
-            observation = np.array([
-                self.k.vehicle.get_speed(rl_id) / max_speed,
-                (self.k.vehicle.get_speed(lead_id) -
-                 self.k.vehicle.get_speed(rl_id))
-                / max_speed,
-                self.k.vehicle.get_headway(rl_id) / max_length
-            ])
             obs.update({rl_id: observation})
 
         return obs
@@ -310,3 +351,58 @@ class MultiAgentWaveAttenuationPOEnv(MultiEnv):
 
         # perform the generic reset function
         return super().reset()
+
+    def map_coordinates(self, x, y):
+        offset, boundary_width = self.k.simulation.offset, self.k.simulation.boundary_width
+        half_width = boundary_width / 2
+
+        x, y = x - offset, y - offset
+        x, y = x + half_width, y + half_width
+        x, y = x / boundary_width, y / boundary_width
+        x, y = x * 300, 300 - (y * 300)
+
+        return x, y
+    
+    def cv2_clipped_zoom(self, img, zoom_factor=0):
+
+        """
+        Center zoom in/out of the given image and returning an enlarged/shrinked view of 
+        the image without changing dimensions
+        ------
+        Args:
+            img : ndarray
+                Image array
+            zoom_factor : float
+                amount of zoom as a ratio [0 to Inf). Default 0.
+        ------
+        Returns:
+            result: ndarray
+            numpy ndarray of the same shape of the input img zoomed by the specified factor.          
+        """
+        if zoom_factor == 0:
+            return img
+
+
+        height, width = img.shape[:2] # It's also the final desired shape
+        new_height, new_width = int(height * zoom_factor), int(width * zoom_factor)
+        
+        ### Crop only the part that will remain in the result (more efficient)
+        # Centered bbox of the final desired size in resized (larger/smaller) image coordinates
+        y1, x1 = max(0, new_height - height) // 2, max(0, new_width - width) // 2
+        y2, x2 = y1 + height, x1 + width
+        bbox = np.array([y1,x1,y2,x2])
+        # Map back to original image coordinates
+        bbox = (bbox / zoom_factor).astype(np.int)
+        y1, x1, y2, x2 = bbox
+        cropped_img = img[y1:y2, x1:x2]
+        
+        # Handle padding when downscaling
+        resize_height, resize_width = min(new_height, height), min(new_width, width)
+        pad_height1, pad_width1 = (height - resize_height) // 2, (width - resize_width) //2
+        pad_height2, pad_width2 = (height - resize_height) - pad_height1, (width - resize_width) - pad_width1
+        pad_spec = [(pad_height1, pad_height2), (pad_width1, pad_width2)] + [(0,0)] * (img.ndim - 2)
+        
+        result = cv2.resize(cropped_img, (resize_width, resize_height))
+        result = np.pad(result, pad_spec, mode='constant')
+        assert result.shape[0] == height and result.shape[1] == width
+        return result

@@ -130,38 +130,38 @@ class AccelEnv(Env):
         '''
             Original reward function within Accel class
         '''
-        # if self.env_params.evaluate:
-        #     return np.mean(self.k.vehicle.get_speed(self.k.vehicle.get_ids()))
-        # else:
-        #     return rewards.desired_velocity(self, fail=kwargs['fail'])
+        if self.env_params.evaluate:
+            return np.mean(self.k.vehicle.get_speed(self.k.vehicle.get_ids()))
+        else:
+            return rewards.desired_velocity(self, fail=kwargs['fail'])
         
         '''
             Reward function from WaveAttenuation class to see its effects
         '''
-        if rl_actions is None:
-            return 0
+        # if rl_actions is None:
+        #     return 0
 
-        vel = np.array([
-            self.k.vehicle.get_speed(veh_id)
-            for veh_id in self.k.vehicle.get_ids()
-        ])
+        # vel = np.array([
+        #     self.k.vehicle.get_speed(veh_id)
+        #     for veh_id in self.k.vehicle.get_ids()
+        # ])
 
-        if any(vel < -100) or kwargs['fail']:
-            return 0.
+        # if any(vel < -100) or kwargs['fail']:
+        #     return 0.
 
-        # reward average velocity
-        eta_2 = 4.
-        reward = eta_2 * np.mean(vel) / 20
+        # # reward average velocity
+        # eta_2 = 4.
+        # reward = eta_2 * np.mean(vel) / 20
 
-        # punish accelerations (should lead to reduced stop-and-go waves)
-        eta = 3  # 0.25
-        mean_actions = np.mean(np.abs(np.array(rl_actions)))
-        accel_threshold = 0
+        # # punish accelerations (should lead to reduced stop-and-go waves)
+        # eta = 3  # 0.25
+        # mean_actions = np.mean(np.abs(np.array(rl_actions)))
+        # accel_threshold = 0
 
-        if mean_actions > accel_threshold:
-            reward += eta * (accel_threshold - mean_actions)
+        # if mean_actions > accel_threshold:
+        #     reward += eta * (accel_threshold - mean_actions)
 
-        return float(reward)
+        # return float(reward)
 
     def get_state(self):
         """See class definition."""
@@ -219,24 +219,6 @@ class AccelEnv(Env):
 
         '''
             SUMO GUI Partial Observations
-            Following code uses partial observations from screenshots from sumo-gui to train the model
-            Uses numpy to find red pixels within the screenshot
-        '''
-        # sight_radius = self.sim_params.sight_radius
-        # observation = Image.open(f"/home/michael/Desktop/flow/sumo_full_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")
-        # observation = np.moveaxis(np.asarray(observation), -1, 0)
-        # redpix, greenpix = observation[0], observation[1] 
-        # redpix_indices = np.where(np.logical_and(redpix > 180, redpix < 220, greenpix < 50))
-        # y, x = int(np.mean(redpix_indices[0])), int(np.mean(redpix_indices[1]))
-        # observation = Image.fromarray(np.moveaxis(observation, 0, -1))
-        # left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
-        # observation = observation.crop((left, upper, right, lower))
-        # # observation.save(f'./sumo_partial_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
-        # observation = observation.resize((84,84)) # Resizing the image to be smaller
-        # observation = np.asarray(observation) / 255.
-
-        '''
-            SUMO GUI Partial Observations
             Following code is another method for getting partial observations from the sumo-gui screenshots
             Uses the 2D position of the RL vehicle for a more accurate screenshot
         '''
@@ -257,68 +239,11 @@ class AccelEnv(Env):
         cv2.circle(mask, (int(sight_radius), int(sight_radius)),
                    int(sight_radius), (255, 255, 255), thickness=-1)
         observation = cv2.bitwise_and(observation, observation, mask=mask)
-        # observation.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+        observation = Image.fromarray(observation)
+        observation.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+        observation = np.asarray(observation)
         observation = observation / 255.
 
-
-        '''
-            Pyglet Renderer Full Observations
-            Following code uses the Pyglet renderer with frames of the full observation space
-        '''
-        # print(type(self.frame))
-        # print(self.frame.shape)
-        # observation = Image.fromarray(np.asarray(self.frame))
-        # observation = observation.resize((84,84))
-        # observation = np.asarray(observation) / 255.
-
-        '''
-            Pyglet Renderer Partial Observations
-            Following code uses the Pyglet renderer with sights around the RL vehicles for local observation
-        '''
-        # if np.asarray(self.sights).shape[0] == 0: # When the rendering is initialized, the shape is (0,)
-        #     observation = np.uint8(np.full((100,100,3), 100)) # Create a blank gray square image
-        #     observation = Image.fromarray(observation)
-        # else: 
-        #     observation = Image.fromarray(np.asarray(self.sights[0]))
-        # observation.save("./sight_example.png")
-        # observation = observation.resize((84,84))
-        # observation = np.asarray(observation) / 255.
-
-        '''
-            Matplotlib Full Observations
-            Following code uses Matplotlib to render frames based on the positions of the vehicle, which
-            the RL controller learns on. 
-        '''
-        # car_pos = [int(self.k.vehicle.get_x_by_id(item)) for item in self.k.vehicle.get_ids()]
-        # observation = self.plt_frame(car_pos)
-
-
-        '''
-            Matplotlib Partial Observations
-            Following code uses Matplotlib to render frames based on the positions of the vehicle, which
-            the RL controller learns on. 
-        '''
-        # sight_radius = self.sim_params.sight_radius
-        # car_pos = [int(self.k.vehicle.get_x_by_id(item)) for item in self.k.vehicle.get_ids()]
-        # observation = self.plt_frame(car_pos)
-        # red_pixel = np.array([255, 0, 0])
-        # red_idx = np.where(np.all(observation == red_pixel, axis=-1))
-        # y, x = np.mean(red_idx[0]), np.mean(red_idx[1])
-        # x_min = int(x - sight_radius)
-        # y_min = int(y - sight_radius)
-        # x_max = int(x + sight_radius)
-        # y_max = int(y + sight_radius)
-        # observation = observation[y_min:y_max, x_min:x_max]
-        # height, width = observation.shape[0:2]
-        # sight_radius = height / 2
-        # mask = np.zeros((height, width), np.uint8)
-        # cv2.circle(mask, (int(sight_radius), int(sight_radius)),
-        #            int(sight_radius), (255, 255, 255), thickness=-1)
-        # observation = cv2.bitwise_and(observation, observation, mask=mask)
-        # observation = Image.fromarray(observation)
-        # observation = observation.convert("L")
-        # observation = observation.resize((84,84))
-        # observation = np.asarray(observation) / 255.
 
         '''
             All white observations to make sure that learning on images is working and that the policy

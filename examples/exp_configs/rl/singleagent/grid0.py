@@ -4,19 +4,19 @@
 - **Observation Dimension**: (339, )
 - **Horizon**: 400 steps
 """
-from flow.envs import TrafficLightGridBenchmarkEnv
+from flow.envs import TrafficLightGridPOEnv
 from flow.networks import TrafficLightGridNetwork
 from flow.core.params import SumoParams, EnvParams, InitialConfig, NetParams, \
-    InFlows, SumoCarFollowingParams
+    InFlows, SumoCarFollowingParams, RLController
 from flow.core.params import VehicleParams
-from flow.controllers import SimCarFollowingController, GridRouter
+from flow.controllers import SimCarFollowingController, GridRouter, MinicityRouter
 
 # time horizon of a single rollout
 HORIZON = 400
 # inflow rate of vehicles at every edge
-EDGE_INFLOW = 300
+EDGE_INFLOW = 1000
 # enter speed for departing vehicles
-V_ENTER = 30
+V_ENTER = 20
 # number of row of bidirectional lanes
 N_ROWS = 1
 # number of columns of bidirectional lanes
@@ -26,7 +26,7 @@ INNER_LENGTH = 300
 # length of final edge in route
 LONG_LENGTH = 100
 # length of edges that vehicles start on
-SHORT_LENGTH = 300
+SHORT_LENGTH = 100
 # number of vehicles originating in the left, right, top, and bottom edges
 N_LEFT, N_RIGHT, N_TOP, N_BOTTOM = 1, 1, 1, 1
 
@@ -34,6 +34,8 @@ N_LEFT, N_RIGHT, N_TOP, N_BOTTOM = 1, 1, 1, 1
 N_ROLLOUTS = 10
 # number of parallel workers
 N_CPUS = 5
+
+RL_PENETRATION = 0.2
 
 # we place a sufficient number of vehicles to ensure they confirm with the
 # total number specified above. We also use a "right_of_way" speed mode to
@@ -50,6 +52,17 @@ vehicles.add(
     ),
     routing_controller=(GridRouter, {}),
     num_vehicles=(N_LEFT + N_RIGHT) * N_COLUMNS + (N_BOTTOM + N_TOP) * N_ROWS)
+vehicles.add(
+    veh_id="rl",
+    acceleration_controller=(RLController, {}),
+    car_following_params=SumoCarFollowingParams(
+        min_gap=2.5,
+        max_speed=V_ENTER,
+        decel=7.5,  # avoid collisions at emergency stops
+        speed_mode="right_of_way",
+    ),
+    routing_controller=(GridRouter, {}),
+    num_vehicles=0)
 
 # inflows of vehicles are place on all outer edges (listed here)
 outer_edges = []
@@ -58,22 +71,54 @@ outer_edges += ["right0_{}".format(i) for i in range(N_ROWS)]
 outer_edges += ["bot{}_0".format(i) for i in range(N_ROWS)]
 outer_edges += ["top{}_{}".format(i, N_COLUMNS) for i in range(N_ROWS)]
 
+
 # equal inflows for each edge (as dictate by the EDGE_INFLOW constant)
 inflow = InFlows()
 for edge in outer_edges:
-    inflow.add(
-        veh_type="human",
-        edge=edge,
-        vehs_per_hour=EDGE_INFLOW,
-        departLane="free",
-        departSpeed=V_ENTER)
+    if edge == "left1_0" or edge == "right0_0":
+        inflow.add(
+            veh_type="human",
+            edge=edge,
+            vehs_per_hour=((1 - RL_PENETRATION) * EDGE_INFLOW) / 0.75,
+            departLane="free",
+            departSpeed=V_ENTER
+        )
+        inflow.add(
+            veh_type="rl",
+            edge=edge,
+            vehs_per_hour=(RL_PENETRATION * EDGE_INFLOW) / 0.75,
+            depart_lane="free",
+            depart_speed=V_ENTER
+        )
+    else:
+        inflow.add(
+            veh_type="human",
+            edge=edge,
+            vehs_per_hour=EDGE_INFLOW / 2,
+            departLane="free",
+            departSpeed=V_ENTER
+        )
+        # inflow.add(
+        #     veh_type="human",
+        #     edge=edge,
+        #     vehs_per_hour=(1 - RL_PENETRATION) * EDGE_INFLOW,
+        #     departLane="free",
+        #     departSpeed=V_ENTER
+        # )
+        # inflow.add(
+        #     veh_type="rl",
+        #     edge=edge,
+        #     vehs_per_hour=RL_PENETRATION * EDGE_INFLOW,
+        #     depart_lane="free",
+        #     depart_speed=V_ENTER
+        # )
 
 flow_params = dict(
     # name of the experiment
     exp_tag="grid_0",
 
     # name of the flow environment the experiment is running on
-    env_name=TrafficLightGridBenchmarkEnv,
+    env_name=TrafficLightGridPOEnv,
 
     # name of the network class the experiment is running on
     network=TrafficLightGridNetwork,
@@ -84,9 +129,9 @@ flow_params = dict(
     # sumo-related parameters (see flow.core.params.SumoParams)
     sim=SumoParams(
         restart_instance=True,
-        sim_step=1,
+        sim_step=0.1,
         render=True,
-        sight_radius=42,
+        sight_radius=84,
         show_radius=False,
     ),
 
@@ -121,6 +166,7 @@ flow_params = dict(
             },
             "horizontal_lanes": 1,
             "vertical_lanes": 1,
+            "traffic_lights": False,
         },
     ),
 
