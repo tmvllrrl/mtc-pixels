@@ -270,7 +270,7 @@ class TraCISimulation(KernelSimulation):
                 sumo_call.append("true")
 
                 sumo_call.append("--window-size")
-                sumo_call.append("810,1071") # +1300,+300 for Merge, +500, +500 for grid, +2100, +500 for bottleneck
+                sumo_call.append("310,571") # +1300,+300 for Merge, +500, +500 for grid, +2100, +500 for bottleneck
 
                 # sumo_call.append("--gui-settings-file")
                 # sumo_call.append("/home/michael/Desktop/flow/viewsettings.xml")
