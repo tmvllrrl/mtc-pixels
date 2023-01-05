@@ -117,7 +117,7 @@ class MergePOEnv(Env):
         return Box(
             low=-float('inf'), 
             high=float('inf'), 
-            shape=(84,84,5,),
+            shape=(84,84,self.num_rl,),
             # shape=(5 * self.num_rl, ), 
             dtype=np.float32)
 
@@ -135,22 +135,22 @@ class MergePOEnv(Env):
         # Save the avg and min velocity collectors to a file
         # if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
              
-        #     if not os.path.exists(f"./michael_files/{self.results_dir_name}/"):
+        #     if not os.path.exists(f"../../michael_files/{self.results_dir_name}/"):
         #        os.mkdir(f"./michael_files/{self.results_dir_name}/")
          
-        #     with open(f"./michael_files/{self.results_dir_name}/avg_velocity.txt", "a") as f:
+        #     with open(f"../../michael_files/{self.results_dir_name}/avg_velocity.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
         #         f.write("\n")
             
-        #     with open(f"./michael_files/{self.results_dir_name}/min_velocity.txt", "a") as f:
+        #     with open(f"../../michael_files/{self.results_dir_name}/min_velocity.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
         #         f.write("\n")
             
-        #     with open(f"./michael_files/{self.results_dir_name}/rl_velocity.txt", "a") as f:
+        #     with open(f"../../michael_files/{self.results_dir_name}/rl_velocity.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
         #         f.write("\n")
         
-        #     with open(f"./michael_files/{self.results_dir_name}/rl_accel_realized.txt", "a") as f:
+        #     with open(f"../../michael_files/{self.results_dir_name}/rl_accel_realized.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
         #         f.write("\n")
 
@@ -208,7 +208,7 @@ class MergePOEnv(Env):
         '''
             Image based method for training with Merge
         '''
-        observation = np.zeros((5,84,84))
+        observation = np.zeros((self.num_rl,84,84))
         
         for i, rl_id in enumerate(self.rl_veh):
             sight_radius = self.sim_params.sight_radius
@@ -219,7 +219,7 @@ class MergePOEnv(Env):
                 continue
             x, y = self.map_coordinates(x, y)
             
-            bev = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+            bev = Image.open(f"../../michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
             left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
             bev = bev.crop((left, upper, right, lower))
             bev = bev.convert("L").resize((84,84))
@@ -324,10 +324,7 @@ class MergePOEnv(Env):
         offset, boundary_width = self.k.simulation.offset, self.k.simulation.boundary_width
         half_width = boundary_width / 2
 
-        x, y = x - offset, y - offset
-        x, y = x + half_width, y + half_width
-        x, y = x / boundary_width, y / boundary_width
-        x, y = x * 1600, 687 - (y * 687)
+        x = (((x - offset) + half_width) / boundary_width) * 1600
 
         return x, 193
     

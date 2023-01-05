@@ -99,14 +99,24 @@ class TraCISimulation(KernelSimulation):
 
     def simulation_step(self):
         """See parent class."""
+
+        '''
+            Zoom levels for different networks:
+            REMEMBER TO CHANGE WINDOW SIZE
+            Ring -> 75
+            Figure 8 -> 75
+            Intersection -> 95
+            Bottleneck -> 95
+            Merge -> 85
+        '''
+        zoom_level = 75
         
-        if self.kernel_api.gui.getZoom() != 75: # This only occurs one time at the start of the simulation
-            # 85 for Merge, 75 for Ring/Figure8, 95 for Grid
-            self.kernel_api.gui.setZoom(traci.gui.DEFAULT_VIEW, 75)
+        if self.kernel_api.gui.getZoom() != zoom_level: #
+            
+            self.kernel_api.gui.setZoom(traci.gui.DEFAULT_VIEW, zoom_level)
             self.kernel_api.gui.setSchema(traci.gui.DEFAULT_VIEW, "faster standard")
 
             self.offset = self.kernel_api.gui.getOffset()[0]
-            # print(f"offset: {self.offset}")
 
             boundary = self.kernel_api.gui.getBoundary()
             boundary_min = boundary[0][0]
@@ -115,8 +125,7 @@ class TraCISimulation(KernelSimulation):
             self.boundary_width = abs(boundary_min) + abs(boundary_max)
             # print(f"boundary width: {self.boundary_width}")
 
-        # self.id_timed = f"{self.id}{self.timestep}"
-        self.kernel_api.gui.screenshot(traci.gui.DEFAULT_VIEW, f"./michael_files/sumo_obs/state_{self.id}.jpeg")
+        self.kernel_api.gui.screenshot(traci.gui.DEFAULT_VIEW, f"../../michael_files/sumo_obs/state_{self.id}.jpeg")
         # self.timestep = self.timestep + 1
 
         self.kernel_api.simulationStep()
@@ -270,7 +279,18 @@ class TraCISimulation(KernelSimulation):
                 sumo_call.append("true")
 
                 sumo_call.append("--window-size")
-                sumo_call.append("310,571") # +1300,+300 for Merge, +500, +500 for grid, +2100, +500 for bottleneck
+                sumo_call.append("310,571") 
+
+                '''
+                    Window size for different road networks
+                    REMEMBER TO CHANGE ZOOM LEVEL
+
+                    Ring -> 310, 571
+                    Figure 8 -> 310, 571
+                    Intersection -> 810, 1071
+                    Bottleneck -> 2410, 1071
+                    Merge -> 1610, 871
+                '''
 
                 # sumo_call.append("--gui-settings-file")
                 # sumo_call.append("/home/michael/Desktop/flow/viewsettings.xml")

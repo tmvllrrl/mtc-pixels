@@ -22,6 +22,7 @@ from PIL import Image
 
 import numpy as np
 import cv2
+import math
 from gym.spaces.box import Box
 
 from flow.core import rewards
@@ -862,7 +863,7 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
         return Box(
             low=0.0, 
             high=2.0,
-            shape=(84,84,15,),
+            shape=(84,84,self.num_rl,),
             # shape=(num_obs, ), 
             dtype=np.float32)
 
@@ -981,7 +982,7 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
             rl_id = self.rl_queue.popleft()
             self.rl_veh.append(rl_id)
         
-        observation = np.zeros((15,84,84)) 
+        observation = np.zeros((self.num_rl,84,84)) 
 
         for i, rl_id in enumerate(self.rl_veh):
             sight_radius = self.sim_params.sight_radius
@@ -992,11 +993,11 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
                 continue
             x, y = self.map_coordinates(x,y)
 
-            bev = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+            bev = Image.open(f"../../michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
             left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
             bev = bev.crop((left, upper, right, lower))
             bev = bev.convert("L").resize((84,84))
-            bev.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+            # bev.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
             bev = np.asarray(bev)
             bev = self.cv2_clipped_zoom(bev, 1.5)
             height, width = bev.shape[0:2]
@@ -1065,12 +1066,13 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
         offset, boundary_width = self.k.simulation.offset, self.k.simulation.boundary_width
         half_width = boundary_width / 2
 
-        x, y = x - offset, y - offset
-        x, y = x + half_width, y + half_width
-        x, y = x / boundary_width, y / boundary_width
-        x, y = x * 2400, 800 - (y * 800)
+        y_offset = -1 if y > 0 else 3
+        y = math.ceil(y) if y < 0 else math.floor(y)
 
-        return x, 440
+        x = (((x - offset) + half_width) / boundary_width) * 2400
+        y = 443 - (2*y) + y_offset
+
+        return x, y
 
     def cv2_clipped_zoom(self, img, zoom_factor=0):
 

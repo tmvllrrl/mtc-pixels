@@ -60,11 +60,6 @@ flow_params = dict(
         # emission_path="./michael_files/emission_collection/"
     ),
 
-    # sim=SumoParams(
-    #     sim_step=0.1,
-    #     render=False
-    # ),
-
     # environment related parameters (see flow.core.params.EnvParams)
     env=EnvParams(
         horizon=HORIZON,

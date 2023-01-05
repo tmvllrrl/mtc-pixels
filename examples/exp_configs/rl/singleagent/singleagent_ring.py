@@ -36,7 +36,7 @@ vehicles.add(
 
 flow_params = dict(
     # name of the experiment
-    exp_tag="singleagent_onelane_ring",
+    exp_tag="singleagent_ring",
 
     # name of the flow environment the experiment is running on
     env_name=WaveAttenuationPOEnv,
@@ -55,7 +55,7 @@ flow_params = dict(
         restart_instance=False,
         sight_radius=42,
         show_radius=False,
-        emission_path="./michael_files/emission_collection/"
+        # emission_path="../../michael_files/emission_collection/"
     ),
 
     # environment related parameters (see flow.core.params.EnvParams)

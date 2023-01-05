@@ -134,34 +134,6 @@ class AccelEnv(Env):
             return np.mean(self.k.vehicle.get_speed(self.k.vehicle.get_ids()))
         else:
             return rewards.desired_velocity(self, fail=kwargs['fail'])
-        
-        '''
-            Reward function from WaveAttenuation class to see its effects
-        '''
-        # if rl_actions is None:
-        #     return 0
-
-        # vel = np.array([
-        #     self.k.vehicle.get_speed(veh_id)
-        #     for veh_id in self.k.vehicle.get_ids()
-        # ])
-
-        # if any(vel < -100) or kwargs['fail']:
-        #     return 0.
-
-        # # reward average velocity
-        # eta_2 = 4.
-        # reward = eta_2 * np.mean(vel) / 20
-
-        # # punish accelerations (should lead to reduced stop-and-go waves)
-        # eta = 3  # 0.25
-        # mean_actions = np.mean(np.abs(np.array(rl_actions)))
-        # accel_threshold = 0
-
-        # if mean_actions > accel_threshold:
-        #     reward += eta * (accel_threshold - mean_actions)
-
-        # return float(reward)
 
     def get_state(self):
         """See class definition."""
@@ -169,22 +141,22 @@ class AccelEnv(Env):
         # Save the avg and min velocity collectors to a file
         # if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
              
-        #     if not os.path.exists(f"./michael_files/{self.results_dir_name}/"):
+        #     if not os.path.exists(f"../../michael_files/{self.results_dir_name}/"):
         #        os.mkdir(f"./michael_files/{self.results_dir_name}/")
          
-        #     with open(f"./michael_files/{self.results_dir_name}/avg_velocity.txt", "a") as f:
+        #     with open(f"../../michael_files/{self.results_dir_name}/avg_velocity.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
         #         f.write("\n")
             
-        #     with open(f"./michael_files/{self.results_dir_name}/min_velocity.txt", "a") as f:
+        #     with open(f"../../michael_files/{self.results_dir_name}/min_velocity.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
         #         f.write("\n")
             
-        #     with open(f"./michael_files/{self.results_dir_name}/rl_velocity.txt", "a") as f:
+        #     with open(f"../../michael_files/{self.results_dir_name}/rl_velocity.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
         #         f.write("\n")
         
-        #     with open(f"./michael_files/{self.results_dir_name}/rl_accel_realized.txt", "a") as f:
+        #     with open(f"../../michael_files/{self.results_dir_name}/rl_accel_realized.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
         #         f.write("\n")
 
@@ -226,7 +198,7 @@ class AccelEnv(Env):
         rl_id = self.k.vehicle.get_rl_ids()[0]
         x, y = self.k.vehicle.get_2d_position(rl_id)
         x, y = self.map_coordinates(x, y)
-        observation = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+        observation = Image.open(f"../../michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
         left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
         observation = observation.crop((left, upper, right, lower))
         observation = observation.convert("L") # Grayscale the image
@@ -239,9 +211,9 @@ class AccelEnv(Env):
         cv2.circle(mask, (int(sight_radius), int(sight_radius)),
                    int(sight_radius), (255, 255, 255), thickness=-1)
         observation = cv2.bitwise_and(observation, observation, mask=mask)
-        observation = Image.fromarray(observation)
-        observation.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
-        observation = np.asarray(observation)
+        # observation = Image.fromarray(observation)
+        # observation.save(f'../../michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+        # observation = np.asarray(observation)
         observation = observation / 255.
 
         '''
