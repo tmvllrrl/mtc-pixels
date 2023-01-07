@@ -111,6 +111,10 @@ class TraCISimulation(KernelSimulation):
         '''
         zoom_level = 75
         
+        '''
+            COMMENT THE FOLLOWING BLOCK OUT FOR ABSOLUTE OBSERVATIONS 
+            (Makes the experiments run faster
+        '''
         if self.kernel_api.gui.getZoom() != zoom_level: #
             
             self.kernel_api.gui.setZoom(traci.gui.DEFAULT_VIEW, zoom_level)
@@ -123,10 +127,8 @@ class TraCISimulation(KernelSimulation):
             boundary_max = boundary[1][0]
 
             self.boundary_width = abs(boundary_min) + abs(boundary_max)
-            # print(f"boundary width: {self.boundary_width}")
 
         self.kernel_api.gui.screenshot(traci.gui.DEFAULT_VIEW, f"../../michael_files/sumo_obs/state_{self.id}.jpeg")
-        # self.timestep = self.timestep + 1
 
         self.kernel_api.simulationStep()
         

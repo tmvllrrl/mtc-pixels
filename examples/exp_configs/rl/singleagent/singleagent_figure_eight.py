@@ -63,19 +63,25 @@ flow_params = dict(
     # environment related parameters (see flow.core.params.EnvParams)
     env=EnvParams(
         horizon=HORIZON,
-        # warmup_steps=1500,
+        warmup_steps=750,
         additional_params={
             'target_velocity': 20,
             'max_accel': 3,
             'max_decel': 3,
-            'sort_vehicles': False
+            'sort_vehicles': False,
+            'radius_ring': [20,30]
         },
     ),
 
     # network-related parameters (see flow.core.params.NetParams and the
     # network's documentation or ADDITIONAL_NET_PARAMS component)
     net=NetParams(
-        additional_params=ADDITIONAL_NET_PARAMS.copy(),
+        additional_params={
+            'radius_ring': 32,
+            'lanes': 1,
+            'speed_limit': 30,
+            'resolution': 40
+        },
     ),
 
     # vehicles to be placed in the network at the start of a rollout (see

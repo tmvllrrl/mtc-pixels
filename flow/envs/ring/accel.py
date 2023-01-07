@@ -4,10 +4,14 @@ from flow.core import rewards
 from flow.envs.base import Env
 
 from gym.spaces.box import Box
+from flow.core.params import InitialConfig
+from flow.core.params import NetParams
+from copy import deepcopy
 
 import numpy as np
 import cv2
 import os
+import random
 from PIL import Image
 
 ADDITIONAL_ENV_PARAMS = {
@@ -130,10 +134,35 @@ class AccelEnv(Env):
         '''
             Original reward function within Accel class
         '''
-        if self.env_params.evaluate:
-            return np.mean(self.k.vehicle.get_speed(self.k.vehicle.get_ids()))
-        else:
-            return rewards.desired_velocity(self, fail=kwargs['fail'])
+        # if self.env_params.evaluate:
+        #     return np.mean(self.k.vehicle.get_speed(self.k.vehicle.get_ids()))
+        # else:
+        #     return rewards.desired_velocity(self, fail=kwargs['fail'])
+
+        if rl_actions is None:
+            return 0
+
+        vel = np.array([
+            self.k.vehicle.get_speed(veh_id)
+            for veh_id in self.k.vehicle.get_ids()
+        ])
+
+        if any(vel < -100) or kwargs['fail']:
+            return 0.
+
+        # reward average velocity
+        eta_2 = 4.
+        reward = eta_2 * np.mean(vel) / 20
+
+        # punish accelerations (should lead to reduced stop-and-go waves)
+        eta = 3  # 0.25
+        mean_actions = np.mean(np.abs(np.array(rl_actions)))
+        accel_threshold = 0
+
+        if mean_actions > accel_threshold:
+            reward += eta * (accel_threshold - mean_actions)
+
+        return float(reward)
 
     def get_state(self):
         """See class definition."""
@@ -296,13 +325,52 @@ class AccelEnv(Env):
         self.memory.append(np.zeros((84,84)))
         self.memory.append(np.zeros((84,84)))
 
-        obs = super().reset()
+        # skip if ring length is None
+        if self.env_params.additional_params['radius_ring'] is None:
+            return super().reset()
+
+        # reset the step counter
+        self.step_counter = 0
+
+        # update the network
+        initial_config = InitialConfig()
+        radius_ring = random.randint(
+            10*self.env_params.additional_params['radius_ring'][0],
+            10*self.env_params.additional_params['radius_ring'][1]) / 10.0
+        additional_net_params = {
+            'radius_ring':
+                radius_ring,
+            'lanes':
+                self.net_params.additional_params['lanes'],
+            'speed_limit':
+                self.net_params.additional_params['speed_limit'],
+            'resolution':
+                self.net_params.additional_params['resolution']
+        }
+        net_params = NetParams(additional_params=additional_net_params)
+
+        self.network = self.network.__class__(
+            self.network.orig_name, self.network.vehicles,
+            net_params, initial_config)
+        self.k.vehicle = deepcopy(self.initial_vehicles)
+        self.k.vehicle.kernel_api = self.k.kernel_api
+        self.k.vehicle.master_kernel = self.k
+
+ 
+        print('\n-----------------------')
+        print('ring radius:', net_params.additional_params['radius_ring'])
+        print('-----------------------')
+
+        # restart the sumo instance
+        self.restart_simulation(
+            sim_params=self.sim_params,
+            render=self.sim_params.render)
 
         for veh_id in self.k.vehicle.get_ids():
             self.absolute_position[veh_id] = self.k.vehicle.get_x_by_id(veh_id)
             self.prev_pos[veh_id] = self.k.vehicle.get_x_by_id(veh_id)
 
-        return obs
+        return super().reset()
 
     def map_coordinates(self, x, y):
         offset, boundary_width = self.k.simulation.offset, self.k.simulation.boundary_width
