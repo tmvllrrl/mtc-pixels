@@ -850,6 +850,7 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
         self.num_rl = 15
         self.rl_queue = collections.deque()
         self.rl_veh = []
+        self.img_dim = 42
 
     @property
     def observation_space(self):
@@ -863,7 +864,7 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
         return Box(
             low=0.0, 
             high=2.0,
-            shape=(84,84,self.num_rl,),
+            shape=(self.img_dim,self.img_dim,self.num_rl,),
             # shape=(num_obs, ), 
             dtype=np.float32)
 
@@ -982,7 +983,7 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
             rl_id = self.rl_queue.popleft()
             self.rl_veh.append(rl_id)
         
-        observation = np.zeros((self.num_rl,84,84)) 
+        observation = np.zeros((self.num_rl,self.img_dim,self.img_dim)) 
 
         for i, rl_id in enumerate(self.rl_veh):
             sight_radius = self.sim_params.sight_radius
@@ -996,8 +997,7 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
             bev = Image.open(f"../../michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
             left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
             bev = bev.crop((left, upper, right, lower))
-            bev = bev.convert("L").resize((84,84))
-            # bev.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+            bev = bev.convert("L").resize((226,226))
             bev = np.asarray(bev)
             bev = self.cv2_clipped_zoom(bev, 1.5)
             height, width = bev.shape[0:2]
@@ -1006,6 +1006,10 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
             cv2.circle(mask, (int(sight_radius), int(sight_radius)),
                        int(sight_radius), (255, 255, 255), thickness=-1)
             bev = cv2.bitwise_and(bev, bev, mask=mask)
+            bev = Image.fromarray(bev)
+            bev.save(f'../../michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}_{i}.png')
+            bev = bev.resize((self.img_dim, self.img_dim))
+            bev = np.asarray(bev)
             bev = bev / 255.
 
             observation[i] = bev

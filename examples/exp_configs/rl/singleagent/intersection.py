@@ -33,7 +33,7 @@ N_LEFT, N_RIGHT, N_TOP, N_BOTTOM = 1, 1, 1, 1
 # number of rollouts per training iteration
 N_ROLLOUTS = 10
 # number of parallel workers
-N_CPUS = 5
+N_CPUS = 10
 
 RL_PENETRATION = 0.2
 

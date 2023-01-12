@@ -16,9 +16,9 @@ from flow.core.params import VehicleParams
 from flow.controllers import RLController, ContinuousRouter
 
 # time horizon of a single rollout
-HORIZON = 1000
+HORIZON = 800
 
-N_CPUS = 5
+N_CPUS = 1
 # number of rollouts per training iteration
 N_ROLLOUTS = 10
 
@@ -121,7 +121,7 @@ flow_params = dict(
 
     # environment related parameters (see flow.core.params.EnvParams)
     env=EnvParams(
-        warmup_steps=40,
+        warmup_steps=200,
         sims_per_step=1,
         horizon=HORIZON,
         additional_params=additional_env_params,

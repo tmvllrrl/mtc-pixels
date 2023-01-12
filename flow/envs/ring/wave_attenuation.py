@@ -101,6 +101,7 @@ class WaveAttenuationEnv(Env):
         self.rl_accel_realized_collector = []
 
         self.memory = []
+        self.img_dim = 42
 
         super().__init__(env_params, sim_params, network, simulator)
 
@@ -272,8 +273,11 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
     @property
     def observation_space(self):
         """See class definition."""
-        return Box(low=-float('inf'), high=float('inf'),
-                   shape=(84,84, ), dtype=np.float32)
+        return Box(low=-float('inf'), 
+                high=float('inf'),
+                # shape=(84,84,),
+                shape=(3, ), 
+                dtype=np.float32)
 
     def get_state(self):
         """See class definition."""
@@ -327,24 +331,24 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         '''
             Following code is the original code from Cathy Wu 
         '''
-        # rl_id = self.k.vehicle.get_rl_ids()[0]
-        # lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
+        rl_id = self.k.vehicle.get_rl_ids()[0]
+        lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
 
-        # # normalizers
-        # max_speed = 15.
-        # if self.env_params.additional_params['ring_length'] is not None:
-        #     max_length = self.env_params.additional_params['ring_length'][1]
-        # else:
-        #     max_length = self.k.network.length()
+        # normalizers
+        max_speed = 15.
+        if self.env_params.additional_params['ring_length'] is not None:
+            max_length = self.env_params.additional_params['ring_length'][1]
+        else:
+            max_length = self.k.network.length()
 
-        # observation = np.array([
-        #     self.k.vehicle.get_speed(rl_id) / max_speed,
-        #     (self.k.vehicle.get_speed(lead_id) -
-        #      self.k.vehicle.get_speed(rl_id)) / max_speed,
-        #     (self.k.vehicle.get_x_by_id(lead_id) -
-        #      self.k.vehicle.get_x_by_id(rl_id)) % self.k.network.length()
-        #     / max_length
-        # ])
+        observation = np.array([
+            self.k.vehicle.get_speed(rl_id) / max_speed,
+            (self.k.vehicle.get_speed(lead_id) -
+             self.k.vehicle.get_speed(rl_id)) / max_speed,
+            (self.k.vehicle.get_x_by_id(lead_id) -
+             self.k.vehicle.get_x_by_id(rl_id)) % self.k.network.length()
+            / max_length
+        ])
 
         '''
             SUMO GUI Full Observations
@@ -378,25 +382,27 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
             Following code is another method for getting partial observations from the sumo-gui screenshots
             Uses the 2D position of the RL vehicle for a more accurate screenshot
         '''
-        sight_radius = self.sim_params.sight_radius
-        rl_id = self.k.vehicle.get_rl_ids()[0]
-        x, y = self.k.vehicle.get_2d_position(rl_id)
-        x, y = self.map_coordinates(x, y)
-        observation = Image.open(f"../../michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
-        left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
-        observation = observation.crop((left, upper, right, lower))
-        observation = observation.convert("L")
-        observation = observation.resize((84,84))
-        # observation.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
-        observation = np.asarray(observation)
-        observation = self.cv2_clipped_zoom(observation, 1.5)
-        height, width = observation.shape[0:2]
-        sight_radius = height / 2
-        mask = np.zeros((height, width), np.uint8)
-        cv2.circle(mask, (int(sight_radius), int(sight_radius)),
-                   int(sight_radius), (255, 255, 255), thickness=-1)
-        observation = cv2.bitwise_and(observation, observation, mask=mask)
-        observation = observation / 255.
+        # sight_radius = self.sim_params.sight_radius
+        # rl_id = self.k.vehicle.get_rl_ids()[0]
+        # x, y = self.k.vehicle.get_2d_position(rl_id)
+        # x, y = self.map_coordinates(x, y)
+        # observation = Image.open(f"../../michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+        # left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
+        # observation = observation.crop((left, upper, right, lower))
+        # observation = observation.convert("L")
+        # observation = observation.resize((self.img_dim,self.img_dim))
+        # observation = np.asarray(observation)
+        # observation = self.cv2_clipped_zoom(observation, 1.5)
+        # height, width = observation.shape[0:2]
+        # sight_radius = height / 2
+        # mask = np.zeros((height, width), np.uint8)
+        # cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+        #            int(sight_radius), (255, 255, 255), thickness=-1)
+        # observation = cv2.bitwise_and(observation, observation, mask=mask)
+        # # observation = Image.fromarray(observation)
+        # # observation.save(f'../../michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+        # # observation = np.asarray(observation)
+        # observation = observation / 255.
 
         
 

@@ -109,11 +109,11 @@ class TraCISimulation(KernelSimulation):
             Bottleneck -> 95
             Merge -> 85
         '''
-        zoom_level = 75
+        zoom_level = 85
         
         '''
             COMMENT THE FOLLOWING BLOCK OUT FOR ABSOLUTE OBSERVATIONS 
-            (Makes the experiments run faster
+            (Makes the experiments run faster)
         '''
         if self.kernel_api.gui.getZoom() != zoom_level: #
             
@@ -281,7 +281,7 @@ class TraCISimulation(KernelSimulation):
                 sumo_call.append("true")
 
                 sumo_call.append("--window-size")
-                sumo_call.append("310,571") 
+                sumo_call.append("1610,871") 
 
                 '''
                     Window size for different road networks

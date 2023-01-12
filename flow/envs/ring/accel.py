@@ -91,9 +91,8 @@ class AccelEnv(Env):
         self.rl_accel_realized_collector = []
 
         self.memory = []
-        self.memory.append(np.zeros((84,84)))
-        self.memory.append(np.zeros((84,84)))
-        self.memory.append(np.zeros((84,84)))
+
+        self.img_dim = 42
 
         self.results_dir_name = "trial_results"
 
@@ -113,10 +112,11 @@ class AccelEnv(Env):
         """See class definition."""
         self.obs_var_labels = ['Velocity', 'Absolute_pos']
         return Box(
-            low=0,
-            high=1,
-            shape=(84,84, ),
+            low=-float('inf'),
+            high=float('inf'),
+            shape=(self.img_dim,self.img_dim, ),
             # shape=(2 * self.initial_vehicles.num_vehicles, ),
+            # shape=(3,), # Partial observations
             dtype=np.float32)
 
     def _apply_rl_actions(self, rl_actions):
@@ -207,7 +207,28 @@ class AccelEnv(Env):
         #        for veh_id in self.sorted_ids]
 
         # observation = np.array(speed + pos)
-        
+
+        '''
+            Following code is from Wave Attn and is partial obs
+        '''
+        # rl_id = self.k.vehicle.get_rl_ids()[0]
+        # lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
+
+        # # normalizers
+        # max_speed = 15.
+        # if self.env_params.additional_params['radius_ring'] is not None:
+        #     max_length = self.env_params.additional_params['radius_ring'][1]
+        # else:
+        #     max_length = self.k.network.length()
+
+        # observation = np.array([
+        #     self.k.vehicle.get_speed(rl_id) / max_speed,
+        #     (self.k.vehicle.get_speed(lead_id) -
+        #      self.k.vehicle.get_speed(rl_id)) / max_speed,
+        #     (self.k.vehicle.get_x_by_id(lead_id) -
+        #      self.k.vehicle.get_x_by_id(rl_id)) % self.k.network.length()
+        #     / max_length
+        # ])
 
         '''
             SUMO GUI Full Observations
@@ -231,7 +252,7 @@ class AccelEnv(Env):
         left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
         observation = observation.crop((left, upper, right, lower))
         observation = observation.convert("L") # Grayscale the image
-        observation = observation.resize((84,84)) # Resize to fit the convolution layers
+        observation = observation.resize((self.img_dim,self.img_dim)) # Resize to fit the convolution layers
         observation = np.asarray(observation)
         observation = self.cv2_clipped_zoom(observation, 1.5) # Zoom in on the image
         height, width = observation.shape[0:2]

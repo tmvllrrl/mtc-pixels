@@ -11,7 +11,7 @@ HORIZON = 1500
 # number of rollouts per training iteration
 N_ROLLOUTS = 10
 # number of parallel workers
-N_CPUS = 5
+N_CPUS = 10
 
 # We place one autonomous vehicle and 13 human-driven vehicles in the network
 vehicles = VehicleParams()
@@ -55,7 +55,7 @@ flow_params = dict(
         render=True,
         save_render=False,
         restart_instance=False,
-        sight_radius=42,
+        sight_radius=30,
         show_radius=False,
         # emission_path="./michael_files/emission_collection/"
     ),

@@ -146,17 +146,15 @@ def setup_exps_rllib(flow_params,
     agent_cls = get_trainer_class(alg_run)
     config = deepcopy(agent_cls._default_config)
 
-    config["num_workers"] = 5 # CHANGING THIS TO SEE THE RESULTS IN JUPYTER
+    config["num_workers"] = 10 # CHANGING THIS TO SEE THE RESULTS IN JUPYTER
     config["train_batch_size"] = horizon * n_rollouts
     # config["train_batch_size"] = 256
     config["gamma"] = 0.999  # discount rate
-    # print(f"config[model]: {config['model']}")
-    # config["model"].update({"fcnet_hiddens": [256, 256, 128]}) # change for bottleneck
-    config["model"].update({"conv_filters":  [
-        [16, [8, 8], 4],
-        [32, [4, 4], 2],
-        [256, [11, 11], 1],
-    ]})
+    # config["model"].update({"conv_filters":  [
+    #     [16, [8, 8], 4],
+    #     [32, [4, 4], 2],
+    #     [256, [11, 11], 1],
+    # ]})
     # print(f"model config: {config['model']}")
     config["use_gae"] = True
     config["lambda"] = 0.97

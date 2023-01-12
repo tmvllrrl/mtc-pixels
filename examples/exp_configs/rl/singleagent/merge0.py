@@ -18,18 +18,20 @@ from flow.core.params import VehicleParams
 from flow.controllers import SimCarFollowingController, RLController
 
 # time horizon of a single rollout
-HORIZON = 750
+HORIZON = 700
 # inflow rate at the highway
 FLOW_RATE = 2000
+# inflow rate at the merge
+MERGE_RATE = 300
 # percent of autonomous vehicles
 RL_PENETRATION = 0.1
 # num_rl term (see ADDITIONAL_ENV_PARAMs)
 NUM_RL = 5
 
 # number of rollouts per training iteration
-N_ROLLOUTS = 5
+N_ROLLOUTS = 10
 # number of parallel workers
-N_CPUS = 5
+N_CPUS = 10
 
 # We consider a highway network with an upstream merging lane producing
 # shockwaves
@@ -73,7 +75,7 @@ inflow.add(
 inflow.add(
     veh_type="human",
     edge="inflow_merge",
-    vehs_per_hour=100,
+    vehs_per_hour=MERGE_RATE,
     departLane="free",
     departSpeed=7.5)
 
@@ -102,8 +104,8 @@ flow_params = dict(
     # environment related parameters (see flow.core.params.EnvParams)
     env=EnvParams(
         horizon=HORIZON,
-        sims_per_step=2,
-        warmup_steps=0,
+        sims_per_step=1,
+        warmup_steps=200,
         additional_params={
             "max_accel": 1.5,
             "max_decel": 1.5,
