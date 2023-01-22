@@ -97,11 +97,12 @@ class WaveAttenuationEnv(Env):
         self.avg_velocity_collector = []
         self.min_velocity_collector = []
         self.rl_velocity_collector = []
-        self.rl_accel_collector = []
         self.rl_accel_realized_collector = []
 
         self.memory = []
-        self.img_dim = 42
+        self.img_dim = 84
+
+        self.rl_action_collector = []
 
         super().__init__(env_params, sim_params, network, simulator)
 
@@ -127,6 +128,7 @@ class WaveAttenuationEnv(Env):
 
     def _apply_rl_actions(self, rl_actions):
         """See class definition."""
+        self.rl_action_collector.append(float(rl_actions[0])) # Collecting rl_actions
         # print("rl_action", rl_actions)
         self.k.vehicle.apply_acceleration(
             self.k.vehicle.get_rl_ids(), rl_actions)
@@ -184,7 +186,6 @@ class WaveAttenuationEnv(Env):
         self.avg_velocity_collector = []
         self.min_velocity_collector = []
         self.rl_velocity_collector = []
-        self.rl_accel_collector = []
         self.rl_accel_realized_collector = []
 
         self.space_time_collector = []
@@ -276,38 +277,45 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         return Box(low=-float('inf'), 
                 high=float('inf'),
                 # shape=(84,84,),
-                shape=(3, ), 
+                # shape=(3, ), 
+                shape=(1,), # Removed velocity obs.
                 dtype=np.float32)
 
     def get_state(self):
         """See class definition."""
-        # start_time = time.time()
-        # # print(f"identifier in state: {identifier}")
 
-        # Save the avg and min velocity collectors to a file
+        '''
+            Saves various information about the run to files to be used later on.
+            Some of the files are used for graphs, others calculate some avg. 
+            statistics on the data
+        '''
         # if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
              
-        #     if not os.path.exists("./michael_files/results_lengthX/"):
-        #        os.mkdir("./michael_files/results_lengthX/")
+        #     if not os.path.exists("../../michael_files/results_lengthX/"):
+        #        os.mkdir("../../michael_files/results_lengthX/")
          
-        #     with open(f"./michael_files/results_lengthX/avg_velocity.txt", "a") as f:
+        #     with open(f"../../michael_files/results_lengthX/avg_velocity.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
         #         f.write("\n")
             
-        #     with open(f"./michael_files/results_lengthX/min_velocity.txt", "a") as f:
+        #     with open(f"../../michael_files/results_lengthX/min_velocity.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
         #         f.write("\n")
             
-        #     with open(f"./michael_files/results_lengthX/rl_velocity.txt", "a") as f:
+        #     with open(f"../../michael_files/results_lengthX/rl_velocity.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
         #         f.write("\n")
         
-        #     with open(f"./michael_files/results_lengthX/rl_accel_realized.txt", "a") as f:
+        #     with open(f"../../michael_files/results_lengthX/rl_accel_realized.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
         #         f.write("\n")
 
-        #     self.space_time_collector = np.asarray(self.space_time_collector)
-        #     plot_std(self.space_time_collector, horizon=5000, warmup=3000)
+        #     self.rl_action_collector = np.asarray(self.rl_action_collector)
+        #     np.savez("../../michael_files/rl_action_collector.npz", rl_actions=self.rl_action_collector)
+
+        #     # self.space_time_collector = np.asarray(self.space_time_collector)
+        #     # np.savez("../../michael_files/space_time_collector.npz", space_time_collector=self.space_time_collector)
+        #     # plot_std(self.space_time_collector, horizon=5000, warmup=3000)
 
         # speed = np.asarray([self.k.vehicle.get_speed(veh_id) for veh_id in self.k.vehicle.get_ids()])
         # self.avg_velocity_collector.append(np.mean(speed))
@@ -331,6 +339,30 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         '''
             Following code is the original code from Cathy Wu 
         '''
+        # rl_id = self.k.vehicle.get_rl_ids()[0]
+        # lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
+
+        # # normalizers
+        # max_speed = 15.
+        # if self.env_params.additional_params['ring_length'] is not None:
+        #     max_length = self.env_params.additional_params['ring_length'][1]
+        # else:
+        #     max_length = self.k.network.length()
+
+        # observation = np.array([
+        #     self.k.vehicle.get_speed(rl_id) / max_speed,
+        #     (self.k.vehicle.get_speed(lead_id) -
+        #      self.k.vehicle.get_speed(rl_id)) / max_speed,
+        #     (self.k.vehicle.get_x_by_id(lead_id) -
+        #      self.k.vehicle.get_x_by_id(rl_id)) % self.k.network.length()
+        #     / max_length
+        # ])
+
+        '''
+            Following code is the original code from Cathy Wu 
+            However, modified to only look at the position of the AV
+            and leading vehicle
+        '''
         rl_id = self.k.vehicle.get_rl_ids()[0]
         lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
 
@@ -342,9 +374,6 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
             max_length = self.k.network.length()
 
         observation = np.array([
-            self.k.vehicle.get_speed(rl_id) / max_speed,
-            (self.k.vehicle.get_speed(lead_id) -
-             self.k.vehicle.get_speed(rl_id)) / max_speed,
             (self.k.vehicle.get_x_by_id(lead_id) -
              self.k.vehicle.get_x_by_id(rl_id)) % self.k.network.length()
             / max_length
@@ -359,23 +388,6 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         # observation = observation.resize((84,84)) # Resizing the image to be smaller
         # observation = np.asarray(observation) / 255.
 
-        '''
-            SUMO GUI Partial Observations
-            Following code uses partial observations from screenshots from sumo-gui to train the model
-            Uses numpy to find red pixels within the screenshot
-        '''
-        # sight_radius = self.sim_params.sight_radius
-        # observation = Image.open(f"/home/michael/Desktop/flow/sumo_full_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")
-        # observation = np.moveaxis(np.asarray(observation), -1, 0)
-        # redpix, greenpix = observation[0], observation[1] 
-        # redpix_indices = np.where(np.logical_and(redpix > 180, redpix < 220, greenpix < 50))
-        # y, x = int(np.mean(redpix_indices[0])), int(np.mean(redpix_indices[1]))
-        # observation = Image.fromarray(np.moveaxis(observation, 0, -1))
-        # left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
-        # observation = observation.crop((left, upper, right, lower))
-        # # observation.save(f'./sumo_partial_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
-        # observation = observation.resize((84,84)) # Resizing the image to be smaller
-        # observation = np.asarray(observation) / 255.
 
         '''
             SUMO GUI Partial Observations
@@ -404,98 +416,18 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         # # observation = np.asarray(observation)
         # observation = observation / 255.
 
-        
-
-        '''
-            Pyglet Renderer Full Observations
-            Following code uses the Pyglet renderer with frames of the full observation space
-        '''
-        # print(type(self.frame))
-        # print(self.frame.shape)
-        # observation = Image.fromarray(np.asarray(self.frame))
-        # observation = observation.resize((84,84))
-        # observation = np.asarray(observation) / 255.
-
-        '''
-            Pyglet Renderer Partial Observations
-            Following code uses the Pyglet renderer with sights around the RL vehicles for local observation
-        '''
-        # if np.asarray(self.sights).shape[0] == 0: # When the rendering is initialized, the shape is (0,)
-        #     observation = np.uint8(np.full((100,100,3), 100)) # Create a blank gray square image
-        #     observation = Image.fromarray(observation)
-        # else: 
-        #     observation = Image.fromarray(np.asarray(self.sights[0]))
-        # observation.save("./sight_example.png")
-        # observation = observation.resize((84,84))
-        # observation = np.asarray(observation) / 255.
-
-        '''
-            Matplotlib Full Observations
-            Following code uses Matplotlib to render frames based on the positions of the vehicle, which
-            the RL controller learns on. 
-        '''
-        # car_pos = [int(self.k.vehicle.get_x_by_id(item)) for item in self.k.vehicle.get_ids()]
-        # observation = self.plt_frame(car_pos)
-
-
-        '''
-            Matplotlib Partial Observations
-            Following code uses Matplotlib to render frames based on the positions of the vehicle, which
-            the RL controller learns on. 
-        '''
-        # sight_radius = self.sim_params.sight_radius
-        # car_pos = [int(self.k.vehicle.get_x_by_id(item)) for item in self.k.vehicle.get_ids()]
-        # observation = self.plt_frame(car_pos)
-        # red_pixel = np.array([255, 0, 0])
-        # red_idx = np.where(np.all(observation == red_pixel, axis=-1))
-        # y, x = np.mean(red_idx[0]), np.mean(red_idx[1])
-        # x_min = int(x - sight_radius)
-        # y_min = int(y - sight_radius)
-        # x_max = int(x + sight_radius)
-        # y_max = int(y + sight_radius)
-        # observation = observation[y_min:y_max, x_min:x_max]
-        # height, width = observation.shape[0:2]
-        # sight_radius = height / 2
-        # mask = np.zeros((height, width), np.uint8)
-        # cv2.circle(mask, (int(sight_radius), int(sight_radius)),
-        #            int(sight_radius), (255, 255, 255), thickness=-1)
-        # observation = cv2.bitwise_and(observation, observation, mask=mask)
-        # observation = Image.fromarray(observation)
-        # observation = observation.convert("L")
-        # observation = observation.resize((84,84))
-        # observation = np.asarray(observation) / 255.
 
         '''
             All white observations to make sure that learning on images is working and that the policy
             is not just randomly learning to do the correct behavior.
         '''
         # observation = np.zeros((84,84)) / 255.
+        # observation = np.asarray([0])
 
-       
-
-        '''
-            Comparing time between different ways for loading the images
-            Idea is to save two times on 1 line: 
-                1. the time taken to take the screenshot/frame
-                2. the time taken to load the screenshot/frame
-            The two times will be summed per line and then averaged across every line
-
-            SL (Save and Load) -> Using the SUMO GUI screenshot function in simulationStep()
-            SLPR (Save and Load Pyglet Renderer) -> Using the SUMO GUI screenshot function in render()
-            FPR (Frame Pyglet Renderer) -> Using the Pyglet renderer frame that is the fully observed observation space
-            SPR (Sight Pyglet Renderer) -> Using the Pyglet renderer local observation sight around the RL vehicle
-            
-            If doing SL, then it should be the simulation id (self.k.simulation.id), else the kernel 
-            id (self.k.id)
-        '''
         
         # time_taken = time.time() - start_time
         # with open(f"./time_taken_SPO{self.k.simulation.id}.txt", "a") as logfile:
         #     logfile.write(f"{time_taken}\n")
-
-        
-
-
 
         return observation
 
@@ -614,3 +546,63 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
 
 # Command to clear memory cache.
 # sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches'
+
+
+        '''
+            Pyglet Renderer Full Observations
+            Following code uses the Pyglet renderer with frames of the full observation space
+        '''
+        # print(type(self.frame))
+        # print(self.frame.shape)
+        # observation = Image.fromarray(np.asarray(self.frame))
+        # observation = observation.resize((84,84))
+        # observation = np.asarray(observation) / 255.
+
+        '''
+            Pyglet Renderer Partial Observations
+            Following code uses the Pyglet renderer with sights around the RL vehicles for local observation
+        '''
+        # if np.asarray(self.sights).shape[0] == 0: # When the rendering is initialized, the shape is (0,)
+        #     observation = np.uint8(np.full((100,100,3), 100)) # Create a blank gray square image
+        #     observation = Image.fromarray(observation)
+        # else: 
+        #     observation = Image.fromarray(np.asarray(self.sights[0]))
+        # observation.save("./sight_example.png")
+        # observation = observation.resize((84,84))
+        # observation = np.asarray(observation) / 255.
+
+        '''
+            Matplotlib Full Observations
+            Following code uses Matplotlib to render frames based on the positions of the vehicle, which
+            the RL controller learns on. 
+        '''
+        # car_pos = [int(self.k.vehicle.get_x_by_id(item)) for item in self.k.vehicle.get_ids()]
+        # observation = self.plt_frame(car_pos)
+
+
+        '''
+            Matplotlib Partial Observations
+            Following code uses Matplotlib to render frames based on the positions of the vehicle, which
+            the RL controller learns on. 
+        '''
+        # sight_radius = self.sim_params.sight_radius
+        # car_pos = [int(self.k.vehicle.get_x_by_id(item)) for item in self.k.vehicle.get_ids()]
+        # observation = self.plt_frame(car_pos)
+        # red_pixel = np.array([255, 0, 0])
+        # red_idx = np.where(np.all(observation == red_pixel, axis=-1))
+        # y, x = np.mean(red_idx[0]), np.mean(red_idx[1])
+        # x_min = int(x - sight_radius)
+        # y_min = int(y - sight_radius)
+        # x_max = int(x + sight_radius)
+        # y_max = int(y + sight_radius)
+        # observation = observation[y_min:y_max, x_min:x_max]
+        # height, width = observation.shape[0:2]
+        # sight_radius = height / 2
+        # mask = np.zeros((height, width), np.uint8)
+        # cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+        #            int(sight_radius), (255, 255, 255), thickness=-1)
+        # observation = cv2.bitwise_and(observation, observation, mask=mask)
+        # observation = Image.fromarray(observation)
+        # observation = observation.convert("L")
+        # observation = observation.resize((84,84))
+        # observation = np.asarray(observation) / 255.
