@@ -847,10 +847,10 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
                     ]
                 index += 1
         
-        self.num_rl = 15
+        self.num_rl = self.env_params.additional_params['num_rl']
         self.rl_queue = collections.deque()
         self.rl_veh = []
-        self.img_dim = 42
+        self.img_dim = self.env_params.additional_params['img_dim']
 
     @property
     def observation_space(self):
@@ -861,12 +861,21 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
         for segment in self.obs_segments:
             num_obs += 4 * segment[1] * self.k.network.num_lanes(segment[0])
         num_obs += 1
-        return Box(
+
+        obs_type = self.env_params.additional_params['obs_type']
+
+        if obs_type == "precise":
+            obs_shape = (num_obs, )
+        elif obs_type == "image":
+            obs_shape = (self.img_dim, self.img_dim, self.num_rl, )
+
+        obs_shape = Box(
             low=0.0, 
             high=2.0,
-            shape=(self.img_dim,self.img_dim,self.num_rl,),
-            # shape=(num_obs, ), 
+            shape=obs_shape,
             dtype=np.float32)
+
+        return obs_shape
 
     @property
     def action_space(self):
@@ -887,134 +896,141 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
             shape=(int(action_size), ), dtype=np.float32)
 
     def get_state(self):
-        """Return aggregate statistics of different segments of the bottleneck.
 
-        The state space of the system is defined by splitting the bottleneck up
-        into edges and then segments in each edge. The class variable
-        self.num_obs_segments specifies how many segments each edge is cut up
-        into. Each lane defines a unique segment: we refer to this as a
-        lane-segment. For example, if edge 1 has four lanes and three segments,
-        then we have a total of 12 lane-segments. We will track the aggregate
-        statistics of the vehicles in each lane segment.
+        obs_type = self.env_params.additional_params['obs_type']
 
-        For each lane-segment we return the:
+        if obs_type == "precise":
+            """
+            Return aggregate statistics of different segments of the bottleneck.
 
-        * Number of vehicles on that segment.
-        * Number of AVs (referred to here as rl_vehicles) in the segment.
-        * The average speed of the vehicles in that segment.
-        * The average speed of the rl vehicles in that segment.
+            The state space of the system is defined by splitting the bottleneck up
+            into edges and then segments in each edge. The class variable
+            self.num_obs_segments specifies how many segments each edge is cut up
+            into. Each lane defines a unique segment: we refer to this as a
+            lane-segment. For example, if edge 1 has four lanes and three segments,
+            then we have a total of 12 lane-segments. We will track the aggregate
+            statistics of the vehicles in each lane segment.
 
-        Finally, we also append the total outflow of the bottleneck over the
-        last 20 * self.sim_step seconds.
-        """
-        # num_vehicles_list = []
-        # num_rl_vehicles_list = []
-        # vehicle_speeds_list = []
-        # rl_speeds_list = []
-        # for i, edge in enumerate(EDGE_LIST):
-        #     num_lanes = self.k.network.num_lanes(edge)
-        #     num_vehicles = np.zeros((self.num_obs_segments[i], num_lanes))
-        #     num_rl_vehicles = np.zeros((self.num_obs_segments[i], num_lanes))
-        #     vehicle_speeds = np.zeros((self.num_obs_segments[i], num_lanes))
-        #     rl_vehicle_speeds = np.zeros((self.num_obs_segments[i], num_lanes))
-        #     ids = self.k.vehicle.get_ids_by_edge(edge)
-        #     lane_list = self.k.vehicle.get_lane(ids)
-        #     pos_list = self.k.vehicle.get_position(ids)
-        #     for i, id in enumerate(ids):
-        #         segment = np.searchsorted(self.obs_slices[edge],
-        #                                   pos_list[i]) - 1
-        #         if id in self.k.vehicle.get_rl_ids():
-        #             rl_vehicle_speeds[segment, lane_list[i]] \
-        #                 += self.k.vehicle.get_speed(id)
-        #             num_rl_vehicles[segment, lane_list[i]] += 1
-        #         else:
-        #             vehicle_speeds[segment, lane_list[i]] \
-        #                 += self.k.vehicle.get_speed(id)
-        #             num_vehicles[segment, lane_list[i]] += 1
+            For each lane-segment we return the:
 
-        #     # normalize
+            * Number of vehicles on that segment.
+            * Number of AVs (referred to here as rl_vehicles) in the segment.
+            * The average speed of the vehicles in that segment.
+            * The average speed of the rl vehicles in that segment.
 
-        #     num_vehicles /= NUM_VEHICLE_NORM
-        #     num_rl_vehicles /= NUM_VEHICLE_NORM
-        #     num_vehicles_list += num_vehicles.flatten().tolist()
-        #     num_rl_vehicles_list += num_rl_vehicles.flatten().tolist()
-        #     vehicle_speeds_list += vehicle_speeds.flatten().tolist()
-        #     rl_speeds_list += rl_vehicle_speeds.flatten().tolist()
+            Finally, we also append the total outflow of the bottleneck over the
+            last 20 * self.sim_step seconds.
+            """
+            
+            num_vehicles_list = []
+            num_rl_vehicles_list = []
+            vehicle_speeds_list = []
+            rl_speeds_list = []
+            for i, edge in enumerate(EDGE_LIST):
+                num_lanes = self.k.network.num_lanes(edge)
+                num_vehicles = np.zeros((self.num_obs_segments[i], num_lanes))
+                num_rl_vehicles = np.zeros((self.num_obs_segments[i], num_lanes))
+                vehicle_speeds = np.zeros((self.num_obs_segments[i], num_lanes))
+                rl_vehicle_speeds = np.zeros((self.num_obs_segments[i], num_lanes))
+                ids = self.k.vehicle.get_ids_by_edge(edge)
+                lane_list = self.k.vehicle.get_lane(ids)
+                pos_list = self.k.vehicle.get_position(ids)
+                for i, id in enumerate(ids):
+                    segment = np.searchsorted(self.obs_slices[edge],
+                                            pos_list[i]) - 1
+                    if id in self.k.vehicle.get_rl_ids():
+                        rl_vehicle_speeds[segment, lane_list[i]] \
+                            += self.k.vehicle.get_speed(id)
+                        num_rl_vehicles[segment, lane_list[i]] += 1
+                    else:
+                        vehicle_speeds[segment, lane_list[i]] \
+                            += self.k.vehicle.get_speed(id)
+                        num_vehicles[segment, lane_list[i]] += 1
 
-        # unnorm_veh_list = np.asarray(num_vehicles_list) * NUM_VEHICLE_NORM
-        # unnorm_rl_list = np.asarray(num_rl_vehicles_list) * NUM_VEHICLE_NORM
+                # normalize
 
-        # # compute the mean speed if the speed isn't zero
-        # num_rl = len(num_rl_vehicles_list)
-        # num_veh = len(num_vehicles_list)
-        # mean_speed = np.nan_to_num([
-        #     vehicle_speeds_list[i] / unnorm_veh_list[i]
-        #     if int(unnorm_veh_list[i]) else 0 for i in range(num_veh)
-        # ])
-        # mean_speed_norm = mean_speed / 50
-        # mean_rl_speed = np.nan_to_num([
-        #     rl_speeds_list[i] / unnorm_rl_list[i]
-        #     if int(unnorm_rl_list[i]) else 0 for i in range(num_rl)
-        # ]) / 50
-        # outflow = np.asarray(
-        #     self.k.vehicle.get_outflow_rate(20 * self.sim_step) / 2000.0)
+                num_vehicles /= NUM_VEHICLE_NORM
+                num_rl_vehicles /= NUM_VEHICLE_NORM
+                num_vehicles_list += num_vehicles.flatten().tolist()
+                num_rl_vehicles_list += num_rl_vehicles.flatten().tolist()
+                vehicle_speeds_list += vehicle_speeds.flatten().tolist()
+                rl_speeds_list += rl_vehicle_speeds.flatten().tolist()
 
-        # observation = np.concatenate((num_vehicles_list, num_rl_vehicles_list,
-        #                        mean_speed_norm, mean_rl_speed, [outflow]))
+            unnorm_veh_list = np.asarray(num_vehicles_list) * NUM_VEHICLE_NORM
+            unnorm_rl_list = np.asarray(num_rl_vehicles_list) * NUM_VEHICLE_NORM
 
-        '''
-            Image-based way
-        '''
-       #  add rl vehicles that just entered the network into the rl queue
-        for veh_id in self.k.vehicle.get_rl_ids():
-            if veh_id not in list(self.rl_queue) + self.rl_veh:
-                self.rl_queue.append(veh_id)
+            # compute the mean speed if the speed isn't zero
+            num_rl = len(num_rl_vehicles_list)
+            num_veh = len(num_vehicles_list)
+            mean_speed = np.nan_to_num([
+                vehicle_speeds_list[i] / unnorm_veh_list[i]
+                if int(unnorm_veh_list[i]) else 0 for i in range(num_veh)
+            ])
+            mean_speed_norm = mean_speed / 50
+            mean_rl_speed = np.nan_to_num([
+                rl_speeds_list[i] / unnorm_rl_list[i]
+                if int(unnorm_rl_list[i]) else 0 for i in range(num_rl)
+            ]) / 50
+            outflow = np.asarray(
+                self.k.vehicle.get_outflow_rate(20 * self.sim_step) / 2000.0)
 
-        # remove rl vehicles that exited the network
-        for veh_id in list(self.rl_queue):
-            if veh_id not in self.k.vehicle.get_rl_ids():
-                self.rl_queue.remove(veh_id)
-        for veh_id in self.rl_veh:
-            if veh_id not in self.k.vehicle.get_rl_ids():
-                self.rl_veh.remove(veh_id)
+            observation = np.concatenate((num_vehicles_list, num_rl_vehicles_list,
+                                mean_speed_norm, mean_rl_speed, [outflow]))
 
-        # fil up rl_veh until they are enough controlled vehicles
-        while len(self.rl_queue) > 0 and len(self.rl_veh) < self.num_rl:
-            rl_id = self.rl_queue.popleft()
-            self.rl_veh.append(rl_id)
-        
-        observation = np.zeros((self.num_rl,self.img_dim,self.img_dim)) 
+        elif obs_type == "image":
+            '''
+                Image-based way
+            '''
+            # add rl vehicles that just entered the network into the rl queue
+            for veh_id in self.k.vehicle.get_rl_ids():
+                if veh_id not in list(self.rl_queue) + self.rl_veh:
+                    self.rl_queue.append(veh_id)
 
-        for i, rl_id in enumerate(self.rl_veh):
-            sight_radius = self.sim_params.sight_radius
+            # remove rl vehicles that exited the network
+            for veh_id in list(self.rl_queue):
+                if veh_id not in self.k.vehicle.get_rl_ids():
+                    self.rl_queue.remove(veh_id)
+            for veh_id in self.rl_veh:
+                if veh_id not in self.k.vehicle.get_rl_ids():
+                    self.rl_veh.remove(veh_id)
 
-            if self.k.vehicle.get_2d_position(rl_id) != -1001:
-                x, y = self.k.vehicle.get_2d_position(rl_id)
-            else:
-                continue
-            x, y = self.map_coordinates(x,y)
+            # fil up rl_veh until they are enough controlled vehicles
+            while len(self.rl_queue) > 0 and len(self.rl_veh) < self.num_rl:
+                rl_id = self.rl_queue.popleft()
+                self.rl_veh.append(rl_id)
+            
+            observation = np.zeros((self.num_rl,self.img_dim,self.img_dim)) 
 
-            bev = Image.open(f"../../michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
-            left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
-            bev = bev.crop((left, upper, right, lower))
-            bev = bev.convert("L").resize((226,226))
-            bev = np.asarray(bev)
-            bev = self.cv2_clipped_zoom(bev, 1.5)
-            height, width = bev.shape[0:2]
-            sight_radius = height / 2
-            mask = np.zeros((height, width), np.uint8)
-            cv2.circle(mask, (int(sight_radius), int(sight_radius)),
-                       int(sight_radius), (255, 255, 255), thickness=-1)
-            bev = cv2.bitwise_and(bev, bev, mask=mask)
-            bev = Image.fromarray(bev)
-            bev.save(f'../../michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}_{i}.png')
-            bev = bev.resize((self.img_dim, self.img_dim))
-            bev = np.asarray(bev)
-            bev = bev / 255.
+            for i, rl_id in enumerate(self.rl_veh):
+                sight_radius = self.sim_params.sight_radius
 
-            observation[i] = bev
-        
-        observation = np.moveaxis(observation, 0, -1)
+                if self.k.vehicle.get_2d_position(rl_id) != -1001:
+                    x, y = self.k.vehicle.get_2d_position(rl_id)
+                else:
+                    continue
+                x, y = self.map_coordinates(x,y)
+
+                bev = Image.open(f"../../michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+                left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
+                bev = bev.crop((left, upper, right, lower))
+                bev = bev.convert("L").resize((226,226))
+                bev = np.asarray(bev)
+                bev = self.cv2_clipped_zoom(bev, 1.5)
+                height, width = bev.shape[0:2]
+                sight_radius = height / 2
+                mask = np.zeros((height, width), np.uint8)
+                cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+                        int(sight_radius), (255, 255, 255), thickness=-1)
+                bev = cv2.bitwise_and(bev, bev, mask=mask)
+                bev = Image.fromarray(bev)
+                bev.save(f'../../michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}_{i}.png')
+                bev = bev.resize((self.img_dim, self.img_dim))
+                bev = np.asarray(bev)
+                bev = bev / 255.
+
+                observation[i] = bev
+            
+            observation = np.moveaxis(observation, 0, -1)
 
         return observation
 

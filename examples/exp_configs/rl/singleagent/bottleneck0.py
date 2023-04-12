@@ -18,9 +18,12 @@ from flow.controllers import RLController, ContinuousRouter
 # time horizon of a single rollout
 HORIZON = 800
 
-N_CPUS = 1
+N_CPUS = 5
 # number of rollouts per training iteration
 N_ROLLOUTS = 10
+
+NETWORK = "bottleneck"
+OBS_TYPE = "precise" # Options: ["precise", "image"]
 
 SCALING = 1
 NUM_LANES = 4 * SCALING  # number of lanes in the widest highway
@@ -55,19 +58,6 @@ controlled_segments = [("1", 1, False), ("2", 2, True), ("3", 2, True),
                        ("4", 2, True), ("5", 1, False)]
 num_observed_segments = [("1", 1), ("2", 3), ("3", 3), ("4", 3), ("5", 1)]
 
-additional_env_params = {
-    "target_velocity": 40,
-    "disable_tb": True,
-    "disable_ramp_metering": True,
-    "controlled_segments": controlled_segments,
-    "symmetric": False,
-    "observed_segments": num_observed_segments,
-    "reset_inflow": False,
-    "lane_change_duration": 5,
-    "max_accel": 3,
-    "max_decel": 3,
-    "inflow_range": [1200, 2500]
-}
 
 # flow rate
 flow_rate = 2500 * SCALING
@@ -93,10 +83,14 @@ if not DISABLE_TB:
 if not DISABLE_RAMP_METER:
     traffic_lights.add(node_id="3")
 
-additional_net_params = {"scaling": SCALING, "speed_limit": 23}
+
 net_params = NetParams(
     inflows=inflow,
-    additional_params=additional_net_params)
+    additional_params={
+        "scaling": SCALING, 
+        "speed_limit": 23
+    }
+)
 
 flow_params = dict(
     # name of the experiment
@@ -117,6 +111,11 @@ flow_params = dict(
         render=True,
         print_warnings=False,
         restart_instance=True,
+        sight_radius=64,
+        additional_params={
+            "network": NETWORK,
+            "obs_type": OBS_TYPE
+        }
     ),
 
     # environment related parameters (see flow.core.params.EnvParams)
@@ -124,14 +123,33 @@ flow_params = dict(
         warmup_steps=200,
         sims_per_step=1,
         horizon=HORIZON,
-        additional_params=additional_env_params,
+        additional_params={
+            "target_velocity": 40,
+            "disable_tb": True,
+            "disable_ramp_metering": True,
+            "controlled_segments": controlled_segments,
+            "symmetric": False,
+            "observed_segments": num_observed_segments,
+            "reset_inflow": False,
+            "lane_change_duration": 5,
+            "max_accel": 3,
+            "max_decel": 3,
+            "inflow_range": [1200, 2500],
+            "obs_type": OBS_TYPE,
+            "num_rl": 15,
+            "img_dim": 84
+        }
+,
     ),
 
     # network-related parameters (see flow.core.params.NetParams and the
     # network's documentation or ADDITIONAL_NET_PARAMS component)
     net=NetParams(
         inflows=inflow,
-        additional_params=additional_net_params,
+        additional_params={
+            "scaling": SCALING, 
+            "speed_limit": 23
+        }
     ),
 
     # vehicles to be placed in the network at the start of a rollout (see
