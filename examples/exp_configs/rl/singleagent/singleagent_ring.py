@@ -80,7 +80,7 @@ flow_params = dict(
             "ring_length": [220, 270],
             "obs_type": ENV_OBS_TYPE, # Options: "og", "only_pos", "image", "blank"
             "evaluate": EVALUATE, # Decides whether to save stats or not
-            "img_dim": 42
+            "img_dim": 84
         },
         
     ),
