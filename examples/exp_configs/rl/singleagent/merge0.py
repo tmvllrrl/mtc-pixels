@@ -26,13 +26,15 @@ FLOW_RATE = 2000
 MERGE_RATE = 100
 # percent of autonomous vehicles
 RL_PENETRATION = 0.1
-# num_rl term (see ADDITIONAL_ENV_PARAMs)
-NUM_RL = 5
 
 # number of rollouts per training iteration
 N_ROLLOUTS = 10
 # number of parallel workers
 N_CPUS = 10
+
+OBS_TYPE = "precise" # Options: ["precise", "image"]
+EVALUATE = False
+CIRCLE_MASK = True
 
 # We consider a highway network with an upstream merging lane producing
 # shockwaves
@@ -100,6 +102,10 @@ flow_params = dict(
         render=True,
         sight_radius=42,
         show_radius=False,
+        additional_params={
+            "network": "merge",
+            "obs_type": OBS_TYPE
+        }
     ),
 
     # environment related parameters (see flow.core.params.EnvParams)
@@ -111,7 +117,10 @@ flow_params = dict(
             "max_accel": 1.5,
             "max_decel": 1.5,
             "target_velocity": 20,
-            "num_rl": NUM_RL,
+            "obs_type": OBS_TYPE,
+            "evaluate": EVALUATE,
+            "num_rl": 5,
+            "img_dim": 84,
         },
     ),
 

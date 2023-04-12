@@ -632,13 +632,13 @@ class TrafficLightGridPOEnv(TrafficLightGridEnv):
         # used during visualization
         self.observed_ids = []
 
-        self.num_rl = 3 # Change from 5 to 3 from 943b1
+        self.num_rl = env_params.additional_params['num_rl']
         # queue of rl vehicles waiting to be controlled
         self.rl_queue = collections.deque()
         # names of the rl vehicles controlled at any step
         self.rl_veh = []
         
-        self.img_dim = 42
+        self.img_dim = env_params.additional_params['img_dim']
 
     @property
     def action_space(self):
@@ -654,179 +654,207 @@ class TrafficLightGridPOEnv(TrafficLightGridEnv):
 
     @property
     def observation_space(self):
-        """State space that is partially observed.
-
-        Velocities, distance to intersecttw
-        tions, edge number (for nearby
-        vehicles) from each direction, edge information, and traffic light
-        state.
         """
-        tl_box = Box(
+        State space that is partially observed.
+
+        Velocities, distance to intersections, edge number (for nearby vehicles) 
+        from each direction, edge information, and traffic light state.
+        """
+
+        obs_type = self.env_params.additional_params['obs_type']
+
+        if obs_type == "precise_og":
+            obs_shape = (
+                3 * 4 * self.num_observed * self.num_traffic_lights +
+                2 * len(self.k.network.get_edge_list()) +
+                3 * self.num_traffic_lights,)
+        elif obs_type == "precise_notl":
+            obs_shape = (40, )
+        elif obs_type == "image":
+            obs_shape = (self.img_dim, self.img_dim, )
+
+        obs_space = Box(
             low=0.,
             high=3,
-            shape=(self.img_dim,self.img_dim,),
-            # shape=(40,),
-            # shape=(3 * 4 * self.num_observed * self.num_traffic_lights +
-            #        2 * len(self.k.network.get_edge_list()) +
-            #        3 * self.num_traffic_lights,),
+            shape=obs_shape,
             dtype=np.float32)
-        return tl_box
+        
+        return obs_space
 
     def get_state(self):
-        """See parent class.
 
-        Returns self.num_observed number of vehicles closest to each traffic
-        light and for each vehicle its velocity, distance to intersection,
-        edge_number traffic light state. This is partially observed
-        """
-        '''
-            Original Wu method that involves learning on the traffic lights and
-            not RL vehicles
-        '''
-        # speeds = []
-        # dist_to_intersec = []
-        # edge_number = []
-        # max_speed = max(
-        #     self.k.network.speed_limit(edge)
-        #     for edge in self.k.network.get_edge_list())
-        # grid_array = self.net_params.additional_params["grid_array"]
-        # max_dist = max(grid_array["short_length"], grid_array["long_length"],
-        #                grid_array["inner_length"])
-        # all_observed_ids = []
+        obs_type = self.env_params.additional_params['obs_type']
 
-        # for _, edges in self.network.node_mapping:
-        #     for edge in edges:
-        #         observed_ids = \
-        #             self.get_closest_to_intersection(edge, self.num_observed)
-        #         all_observed_ids += observed_ids
+        if obs_type == "precise_og":
+            """See parent class.
 
-        #         # check which edges we have so we can always pad in the right
-        #         # positions
-        #         speeds += [
-        #             self.k.vehicle.get_speed(veh_id) / max_speed
-        #             for veh_id in observed_ids
-        #         ]
-        #         dist_to_intersec += [
-        #             (self.k.network.edge_length(
-        #                 self.k.vehicle.get_edge(veh_id)) -
-        #                 self.k.vehicle.get_position(veh_id)) / max_dist
-        #             for veh_id in observed_ids
-        #         ]
-        #         edge_number += \
-        #             [self._convert_edge(self.k.vehicle.get_edge(veh_id)) /
-        #              (self.k.network.network.num_edges - 1)
-        #              for veh_id in observed_ids]
+            Returns self.num_observed number of vehicles closest to each traffic
+            light and for each vehicle its velocity, distance to intersection,
+            edge_number traffic light state. This is partially observed
+            """
+            '''
+                Original Wu method that involves learning on the traffic lights and
+                not RL vehicles
+            '''
+            speeds = []
+            dist_to_intersec = []
+            edge_number = []
+            max_speed = max(
+                self.k.network.speed_limit(edge)
+                for edge in self.k.network.get_edge_list())
+            grid_array = self.net_params.additional_params["grid_array"]
+            max_dist = max(grid_array["short_length"], grid_array["long_length"],
+                           grid_array["inner_length"])
+            all_observed_ids = []
 
-        #         if len(observed_ids) < self.num_observed:
-        #             diff = self.num_observed - len(observed_ids)
-        #             speeds += [0] * diff
-        #             dist_to_intersec += [0] * diff
-        #             edge_number += [0] * diff
+            for _, edges in self.network.node_mapping:
+                for edge in edges:
+                    observed_ids = \
+                        self.get_closest_to_intersection(edge, self.num_observed)
+                    all_observed_ids += observed_ids
 
-        # # now add in the density and average velocity on the edges
-        # density = []
-        # velocity_avg = []
-        # for edge in self.k.network.get_edge_list():
-        #     ids = self.k.vehicle.get_ids_by_edge(edge)
-        #     if len(ids) > 0:
-        #         vehicle_length = 5
-        #         density += [vehicle_length * len(ids) /
-        #                     self.k.network.edge_length(edge)]
-        #         velocity_avg += [np.mean(
-        #             [self.k.vehicle.get_speed(veh_id) for veh_id in
-        #              ids]) / max_speed]
-        #     else:
-        #         density += [0]
-        #         velocity_avg += [0]
-        # self.observed_ids = all_observed_ids
-        # return np.array(
-        #     np.concatenate([
-        #         speeds, dist_to_intersec, edge_number, density, velocity_avg,
-        #         self.last_change.flatten().tolist(),
-        #         self.direction.flatten().tolist(),
-        #         self.currently_yellow.flatten().tolist()
-        #     ]))
+                    # check which edges we have so we can always pad in the right
+                    # positions
+                    speeds += [
+                        self.k.vehicle.get_speed(veh_id) / max_speed
+                        for veh_id in observed_ids
+                    ]
+                    dist_to_intersec += [
+                        (self.k.network.edge_length(
+                            self.k.vehicle.get_edge(veh_id)) -
+                            self.k.vehicle.get_position(veh_id)) / max_dist
+                        for veh_id in observed_ids
+                    ]
+                    edge_number += \
+                        [self._convert_edge(self.k.vehicle.get_edge(veh_id)) /
+                         (self.k.network.network.num_edges - 1)
+                         for veh_id in observed_ids]
 
-        '''
-            Modified Wu method to only use non traffic light related information
-        '''
-        # speeds = []
-        # dist_to_intersec = []
-        # edge_number = []
-        # max_speed = max(
-        #     self.k.network.speed_limit(edge)
-        #     for edge in self.k.network.get_edge_list())
-        # grid_array = self.net_params.additional_params["grid_array"]
-        # max_dist = max(grid_array["short_length"], grid_array["long_length"],
-        #                grid_array["inner_length"])
-        # all_observed_ids = []
+                    if len(observed_ids) < self.num_observed:
+                        diff = self.num_observed - len(observed_ids)
+                        speeds += [0] * diff
+                        dist_to_intersec += [0] * diff
+                        edge_number += [0] * diff
 
-        # for _, edges in self.network.node_mapping:
-        #     for edge in edges:
-        #         observed_ids = \
-        #             self.get_closest_to_intersection(edge, self.num_observed)
-        #         all_observed_ids += observed_ids
+            # now add in the density and average velocity on the edges
+            density = []
+            velocity_avg = []
+            for edge in self.k.network.get_edge_list():
+                ids = self.k.vehicle.get_ids_by_edge(edge)
+                if len(ids) > 0:
+                    vehicle_length = 5
+                    density += [vehicle_length * len(ids) /
+                                self.k.network.edge_length(edge)]
+                    velocity_avg += [np.mean(
+                        [self.k.vehicle.get_speed(veh_id) for veh_id in
+                         ids]) / max_speed]
+                else:
+                    density += [0]
+                    velocity_avg += [0]
+            self.observed_ids = all_observed_ids
 
-        #         # check which edges we have so we can always pad in the right
-        #         # positions
-        #         speeds += [
-        #             self.k.vehicle.get_speed(veh_id) / max_speed
-        #             for veh_id in observed_ids
-        #         ]
-        #         dist_to_intersec += [
-        #             (self.k.network.edge_length(
-        #                 self.k.vehicle.get_edge(veh_id)) -
-        #                 self.k.vehicle.get_position(veh_id)) / max_dist
-        #             for veh_id in observed_ids
-        #         ]
-        #         edge_number += \
-        #             [self._convert_edge(self.k.vehicle.get_edge(veh_id)) /
-        #              (self.k.network.network.num_edges - 1)
-        #              for veh_id in observed_ids]
+            observation = np.array(
+                np.concatenate([
+                    speeds, dist_to_intersec, edge_number, density, velocity_avg,
+                    self.last_change.flatten().tolist(),
+                    self.direction.flatten().tolist(),
+                    self.currently_yellow.flatten().tolist()
+                ]))
 
-        #         if len(observed_ids) < self.num_observed:
-        #             diff = self.num_observed - len(observed_ids)
-        #             speeds += [0] * diff
-        #             dist_to_intersec += [0] * diff
-        #             edge_number += [0] * diff
+        elif obs_type == "precise_notl":
+            '''
+                Modified Wu method to only use non traffic light related information
+            '''
+            speeds = []
+            dist_to_intersec = []
+            edge_number = []
+            max_speed = max(
+                self.k.network.speed_limit(edge)
+                for edge in self.k.network.get_edge_list())
+            grid_array = self.net_params.additional_params["grid_array"]
+            max_dist = max(grid_array["short_length"], grid_array["long_length"],
+                           grid_array["inner_length"])
+            all_observed_ids = []
 
-        # # now add in the density and average velocity on the edges
-        # density = []
-        # velocity_avg = []
-        # for edge in self.k.network.get_edge_list():
-        #     ids = self.k.vehicle.get_ids_by_edge(edge)
-        #     if len(ids) > 0:
-        #         vehicle_length = 5
-        #         density += [vehicle_length * len(ids) /
-        #                     self.k.network.edge_length(edge)]
-        #         velocity_avg += [np.mean(
-        #             [self.k.vehicle.get_speed(veh_id) for veh_id in
-        #              ids]) / max_speed]
-        #     else:
-        #         density += [0]
-        #         velocity_avg += [0]
-        # self.observed_ids = all_observed_ids
-        # observation = np.array(
-        #     np.concatenate([
-        #         speeds, dist_to_intersec, edge_number, density, velocity_avg,
-        #     ]))
+            for _, edges in self.network.node_mapping:
+                for edge in edges:
+                    observed_ids = \
+                        self.get_closest_to_intersection(edge, self.num_observed)
+                    all_observed_ids += observed_ids
 
-        '''
-            Image-based observations
-        '''
-        sight_radius = self.sim_params.sight_radius
-        x, y = 400, 373 # These coordinates are for a single intersection
-        
-        observation = Image.open(f"../../michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
-        left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
-        observation = observation.crop((left, upper, right, lower))
-        observation = observation.convert("L").resize((self.img_dim,self.img_dim))
-        # observation.save(f'../../michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
-        # observation = observation.resize((self.img_dim,self.img_dim))
-        observation = np.asarray(observation)        
-        observation = observation / 255.
+                    # check which edges we have so we can always pad in the right
+                    # positions
+                    speeds += [
+                        self.k.vehicle.get_speed(veh_id) / max_speed
+                        for veh_id in observed_ids
+                    ]
+                    dist_to_intersec += [
+                        (self.k.network.edge_length(
+                            self.k.vehicle.get_edge(veh_id)) -
+                            self.k.vehicle.get_position(veh_id)) / max_dist
+                        for veh_id in observed_ids
+                    ]
+                    edge_number += \
+                        [self._convert_edge(self.k.vehicle.get_edge(veh_id)) /
+                         (self.k.network.network.num_edges - 1)
+                         for veh_id in observed_ids]
+
+                    if len(observed_ids) < self.num_observed:
+                        diff = self.num_observed - len(observed_ids)
+                        speeds += [0] * diff
+                        dist_to_intersec += [0] * diff
+                        edge_number += [0] * diff
+
+            # now add in the density and average velocity on the edges
+            density = []
+            velocity_avg = []
+            for edge in self.k.network.get_edge_list():
+                ids = self.k.vehicle.get_ids_by_edge(edge)
+                if len(ids) > 0:
+                    vehicle_length = 5
+                    density += [vehicle_length * len(ids) /
+                                self.k.network.edge_length(edge)]
+                    velocity_avg += [np.mean(
+                        [self.k.vehicle.get_speed(veh_id) for veh_id in
+                         ids]) / max_speed]
+                else:
+                    density += [0]
+                    velocity_avg += [0]
+            self.observed_ids = all_observed_ids
+            observation = np.array(
+                np.concatenate([
+                    speeds, dist_to_intersec, edge_number, density, velocity_avg,
+                ]))
+
+        elif obs_type == "image":
+            '''
+                Image-based observations
+            '''
+            sight_radius = self.sim_params.sight_radius
+            x, y = 400, 373 # These coordinates are for a single intersection
+            
+            observation = Image.open(f"../../michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+            left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
+            observation = observation.crop((left, upper, right, lower))
+            observation = observation.convert("L").resize((self.img_dim,self.img_dim))
+            observation = np.asarray(observation)
+
+            if self.env_params.additional_params['circle_mask']:
+                height, width = observation.shape[0:2]
+                sight_radius = height / 2
+                mask = np.zeros((height, width), np.uint8)
+                cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+                        int(sight_radius), (255, 255, 255), thickness=-1)
+                observation = cv2.bitwise_and(observation, observation, mask=mask)
+
+            # observation.save(f'../../michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+            # observation = observation.resize((self.img_dim,self.img_dim))
+            # observation = np.asarray(observation)   
+                 
+            observation = observation / 255.
 
         return observation
+
 
     def _apply_rl_actions(self, rl_actions):
         """See class definition."""
@@ -839,9 +867,6 @@ class TrafficLightGridPOEnv(TrafficLightGridEnv):
             is something that merge does.
         '''
         for i, rl_id in enumerate(self.rl_veh):
-            # print(self.rl_veh)
-            # print("rl ids", self.k.vehicle.get_rl_ids())
-            # print(rl_actions)
             # ignore rl vehicles outside the network
             if rl_id not in self.k.vehicle.get_rl_ids():
                 continue
@@ -856,11 +881,6 @@ class TrafficLightGridPOEnv(TrafficLightGridEnv):
             return (- rewards.min_delay_unscaled(self) +
                     rewards.penalize_standstill(self, gain=0.2))
 
-        # if self.env_params.evaluate:
-        #     return - rewards.min_delay_unscaled(self)
-        # else:
-        #     return (rewards.penalize_standstill(self, gain=1) +
-        #             rewards.penalize_near_standstill(self, gain=0.2))
 
     def additional_command(self):
         """See class definition."""

@@ -13,6 +13,12 @@ N_ROLLOUTS = 10
 # number of parallel workers
 N_CPUS = 10
 
+OBS_TYPE = "precise" # Options: ["precise", "image", "partial", "blank"]
+EVALUTE = False
+REWARD_FUNC = "accel" # Options: ["accel", "wave"]
+MEMORY = False
+CIRCLE_MASK = True
+
 # We place one autonomous vehicle and 13 human-driven vehicles in the network
 vehicles = VehicleParams()
 vehicles.add(
@@ -57,6 +63,10 @@ flow_params = dict(
         restart_instance=False,
         sight_radius=30,
         show_radius=False,
+        additional_params={
+            "network": "figure_8",
+            "obs_type": OBS_TYPE, 
+        }
         # emission_path="./michael_files/emission_collection/"
     ),
 
@@ -65,11 +75,17 @@ flow_params = dict(
         horizon=HORIZON,
         warmup_steps=750,
         additional_params={
-            'target_velocity': 20,
-            'max_accel': 3,
-            'max_decel': 3,
-            'sort_vehicles': False,
-            'radius_ring': [20,30]
+            "target_velocity": 20,
+            "max_accel": 3,
+            "max_decel": 3,
+            "sort_vehicles": False,
+            "radius_ring": [20,30],
+            "obs_type": OBS_TYPE, 
+            "evaluate": EVALUTE,
+            "img_dim": 84,
+            "reward": REWARD_FUNC,
+            "memory": MEMORY,
+            "circle_mask": CIRCLE_MASK
         },
     ),
 
@@ -77,10 +93,10 @@ flow_params = dict(
     # network's documentation or ADDITIONAL_NET_PARAMS component)
     net=NetParams(
         additional_params={
-            'radius_ring': 32,
-            'lanes': 1,
-            'speed_limit': 30,
-            'resolution': 40
+            "radius_ring": 32,
+            "lanes": 1,
+            "speed_limit": 30,
+            "resolution": 40
         },
     ),
 

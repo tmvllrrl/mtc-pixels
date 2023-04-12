@@ -279,8 +279,8 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
 
         if obs_type == "precise":
             shape = (3,)
-        elif obs_type == "image":
-            shape = (84, 84, )
+        elif obs_type == "image" or "blank":
+            shape = (self.img_dim, self.img_dim, )
         elif obs_type == "only_pos":
             shape = (1, )
 
@@ -295,12 +295,13 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
     def get_state(self):
         """See class definition."""
 
-        '''
-            Saves various information about the run to files to be used later on.
-            Some of the files are used for graphs, others calculate some avg. 
-            statistics on the data
-        '''
+        
         if self.env_params.additional_params['evaluate']:
+            '''
+                Saves various information about the run to files to be used later on.
+                Some of the files are used for graphs, others calculate some avg. 
+                statistics on the data
+            '''
             if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
                 
                 if not os.path.exists("../../michael_files/results_lengthX/"):
@@ -412,15 +413,19 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
             observation = observation.resize((self.img_dim,self.img_dim))
             observation = np.asarray(observation)
             observation = self.cv2_clipped_zoom(observation, 1.5)
-            height, width = observation.shape[0:2]
-            sight_radius = height / 2
-            mask = np.zeros((height, width), np.uint8)
-            cv2.circle(mask, (int(sight_radius), int(sight_radius)),
-                       int(sight_radius), (255, 255, 255), thickness=-1)
-            observation = cv2.bitwise_and(observation, observation, mask=mask)
+
+            if self.env_params.additional_params['circle_mask']:
+                height, width = observation.shape[0:2]
+                sight_radius = height / 2
+                mask = np.zeros((height, width), np.uint8)
+                cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+                        int(sight_radius), (255, 255, 255), thickness=-1)
+                observation = cv2.bitwise_and(observation, observation, mask=mask)
+
             # observation = Image.fromarray(observation)
             # observation.save(f'../../michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
             # observation = np.asarray(observation)
+
             observation = observation / 255.
 
         elif obs_type == "blank":

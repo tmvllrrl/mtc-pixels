@@ -16,10 +16,9 @@ N_ROLLOUTS = 20
 # number of parallel workers
 N_CPUS = 10
 
-NETWORK = "ring"
-SIM_OBS_TYPE = "precise" # Options: "image" or "precise"
-ENV_OBS_TYPE = "precise" # Options: "precise", "only_pos", "image", "blank"
-EVALUATE = False
+OBS_TYPE = "precise" # Options: ["precise", "only_pos", "image", "blank"]
+EVALUATE = False # Decides whether to save stats or not
+CIRCLE_MASK = True # Decides whether to include a circle mask or not
 
 
 # We place one autonomous vehicle and 22 human-driven vehicles in the network
@@ -62,8 +61,8 @@ flow_params = dict(
         sight_radius=42,
         show_radius=False,
         additional_params={
-            "network": NETWORK,
-            "obs_type": SIM_OBS_TYPE, # Options: "image" or "precise"
+            "network": "ring",
+            "obs_type": OBS_TYPE,
         }
         # emission_path="../../michael_files/emission_collection/"
 
@@ -78,8 +77,9 @@ flow_params = dict(
             "max_accel": 1,
             "max_decel": 1,
             "ring_length": [220, 270],
-            "obs_type": ENV_OBS_TYPE, # Options: "og", "only_pos", "image", "blank"
-            "evaluate": EVALUATE, # Decides whether to save stats or not
+            "obs_type": OBS_TYPE, 
+            "evaluate": EVALUATE, 
+            "circle_mask": CIRCLE_MASK,
             "img_dim": 84
         },
         
