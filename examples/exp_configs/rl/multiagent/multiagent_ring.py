@@ -3,9 +3,6 @@
 Trains a number of autonomous vehicles to stabilize the flow of 22 vehicles in
 a variable length ring road.
 """
-from ray.rllib.agents.ppo.ppo_policy import PPOTFPolicy
-from ray.tune.registry import register_env
-
 from flow.core.params import SumoParams, EnvParams, InitialConfig, NetParams
 from flow.core.params import VehicleParams, SumoCarFollowingParams
 from flow.controllers import RLController, IDMController, ContinuousRouter
@@ -16,9 +13,9 @@ from flow.utils.registry import make_create_env
 # time horizon of a single rollout
 HORIZON = 3000
 # number of rollouts per training iteration
-N_ROLLOUTS = 20
+N_ROLLOUTS = 5
 # number of parallel workers
-N_CPUS = 2
+N_CPUS = 5
 # number of automated vehicles. Must be less than or equal to 22.
 NUM_AUTOMATED = 2
 
@@ -67,14 +64,15 @@ flow_params = dict(
     # sumo-related parameters (see flow.core.params.SumoParams)
     sim=SumoParams(
         sim_step=0.1,
-        render=False,
+        render=True,
+        sight_radius=42,
         restart_instance=False
     ),
 
     # environment related parameters (see flow.core.params.EnvParams)
     env=EnvParams(
         horizon=HORIZON,
-        warmup_steps=750,
+        warmup_steps=3000,
         clip_actions=False,
         additional_params={
             "max_accel": 1,
@@ -102,29 +100,31 @@ flow_params = dict(
     initial=InitialConfig(),
 )
 
+# from ray.rllib.agents.ppo.ppo_policy import PPOTFPolicy
+# from ray.tune.registry import register_env
 
-create_env, env_name = make_create_env(params=flow_params, version=0)
+# create_env, env_name = make_create_env(params=flow_params, version=0)
 
-# Register as rllib env
-register_env(env_name, create_env)
+# # Register as rllib env
+# register_env(env_name, create_env)
 
-test_env = create_env()
-obs_space = test_env.observation_space
-act_space = test_env.action_space
-
-
-def gen_policy():
-    """Generate a policy in RLlib."""
-    return PPOTFPolicy, obs_space, act_space, {}
+# test_env = create_env()
+# obs_space = test_env.observation_space
+# act_space = test_env.action_space
 
 
-# Setup PG with an ensemble of `num_policies` different policy graphs
-POLICY_GRAPHS = {'av': gen_policy()}
+# def gen_policy():
+#     """Generate a policy in RLlib."""
+#     return PPOTFPolicy, obs_space, act_space, {}
 
 
-def policy_mapping_fn(_):
-    """Map a policy in RLlib."""
-    return 'av'
+# # Setup PG with an ensemble of `num_policies` different policy graphs
+# POLICY_GRAPHS = {'av': gen_policy()}
 
 
-POLICIES_TO_TRAIN = ['av']
+# def policy_mapping_fn(_):
+#     """Map a policy in RLlib."""
+#     return 'av'
+
+
+# POLICIES_TO_TRAIN = ['av']

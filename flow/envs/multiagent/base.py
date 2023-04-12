@@ -260,7 +260,7 @@ class MultiEnv(MultiAgentEnv, Env):
             observation, _, _, _ = self.step(rl_actions=None)
 
         # render a frame
-        self.render(reset=True)
+        # self.render(reset=True)
 
         return self.get_state()
 

@@ -20,8 +20,10 @@ import sys
 import time
 
 import ray
+from ray.rllib.agents.registry import get_trainer_class
 try:
     from ray.rllib.agents.agent import get_agent_class
+    
 except ImportError:
     from ray.rllib.agents.registry import get_agent_class
 from ray.tune.registry import register_env
@@ -89,9 +91,9 @@ def visualizer_rllib(args):
                   + '\'{}\''.format(config_run))
             sys.exit(1)
     if args.run:
-        agent_cls = get_agent_class(args.run)
+        agent_cls = get_trainer_class(args.run)
     elif config_run:
-        agent_cls = get_agent_class(config_run)
+        agent_cls = get_trainer_class(config_run)
     else:
         print('visualizer_rllib.py: error: could not find flow parameter '
               '\'run\' in params.json, '
@@ -199,6 +201,10 @@ def visualizer_rllib(args):
     final_inflows = []
     mean_speed = []
     std_speed = []
+
+    action = 0.
+    reward = 0.0
+
     for i in range(args.num_rollouts):
         vel = []
         state = env.reset()
@@ -226,7 +232,12 @@ def visualizer_rllib(args):
                         action[agent_id] = agent.compute_action(
                             state[agent_id], policy_id=policy_map_fn(agent_id))
             else:
-                action = agent.compute_action(state)
+                if use_lstm:
+                    action, state_init, _ = \
+                            agent.compute_action(
+                            state, state=state_init)
+                else:
+                    action = agent.compute_action(observation=state)
             state, reward, done, _ = env.step(action)
             if multiagent:
                 for actor, rew in reward.items():

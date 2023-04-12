@@ -99,26 +99,36 @@ class TraCISimulation(KernelSimulation):
 
     def simulation_step(self):
         """See parent class."""
-        # start_time = time.time()
+
+        '''
+            Zoom levels for different networks:
+            REMEMBER TO CHANGE WINDOW SIZE
+            Ring -> 75
+            Figure 8 -> 75
+            Intersection -> 95
+            Bottleneck -> 95
+            Merge -> 85
+        '''
+        zoom_level = 75
         
-        if self.kernel_api.gui.getZoom() != 80: # This only occurs one time at the start of the simulation
-            self.kernel_api.gui.setZoom(traci.gui.DEFAULT_VIEW, 80)
+        '''
+            COMMENT THE FOLLOWING BLOCK OUT FOR ABSOLUTE OBSERVATIONS 
+            (Makes the experiments run faster)
+        '''
+        # if self.kernel_api.gui.getZoom() != zoom_level: #
+            
+        #     self.kernel_api.gui.setZoom(traci.gui.DEFAULT_VIEW, zoom_level)
+        #     self.kernel_api.gui.setSchema(traci.gui.DEFAULT_VIEW, "faster standard")
 
-            self.offset = self.kernel_api.gui.getOffset()[0]
+        #     self.offset = self.kernel_api.gui.getOffset()[0]
 
-            boundary = self.kernel_api.gui.getBoundary()
-            boundary_min = boundary[0][0]
-            boundary_max = boundary[1][0]
+        #     boundary = self.kernel_api.gui.getBoundary()
+        #     boundary_min = boundary[0][0]
+        #     boundary_max = boundary[1][0]
 
-            self.boundary_width = abs(boundary_min) + abs(boundary_max)
+        #     self.boundary_width = abs(boundary_min) + abs(boundary_max)
 
-        # self.id_timed = f"{self.id}{self.timestep}"
-        self.kernel_api.gui.screenshot(traci.gui.DEFAULT_VIEW, f"/home/michael/Desktop/flow/sumo_obs/state_{self.id}.jpeg")
-        # self.timestep = self.timestep + 1
-    
-        # time_taken = time.time() - start_time
-        # with open(f"./time_taken_SPO{self.id}.txt", "a") as logfile:
-        #     logfile.write(f"{time_taken},")
+        # self.kernel_api.gui.screenshot(traci.gui.DEFAULT_VIEW, f"../../michael_files/sumo_obs/state_{self.id}.jpeg")
 
         self.kernel_api.simulationStep()
         
@@ -271,7 +281,18 @@ class TraCISimulation(KernelSimulation):
                 sumo_call.append("true")
 
                 sumo_call.append("--window-size")
-                sumo_call.append("310,571")
+                sumo_call.append("310,571") 
+
+                '''
+                    Window size for different road networks
+                    REMEMBER TO CHANGE ZOOM LEVEL
+
+                    Ring -> 310, 571
+                    Figure 8 -> 310, 571
+                    Intersection -> 810, 1071
+                    Bottleneck -> 2410, 1071
+                    Merge -> 1610, 871
+                '''
 
                 # sumo_call.append("--gui-settings-file")
                 # sumo_call.append("/home/michael/Desktop/flow/viewsettings.xml")

@@ -17,6 +17,7 @@ from flow.core.util import ensure_dir
 from flow.utils.registry import env_constructor
 from flow.utils.rllib import FlowParamsEncoder, get_flow_params
 from flow.utils.registry import make_create_env
+from ray.rllib.agents.registry import get_trainer_class
 
 
 def parse_args(args):
@@ -134,6 +135,7 @@ def setup_exps_rllib(flow_params,
     from ray.tune.registry import register_env
     try:
         from ray.rllib.agents.agent import get_agent_class
+        
     except ImportError:
         from ray.rllib.agents.registry import get_agent_class
 
@@ -141,30 +143,35 @@ def setup_exps_rllib(flow_params,
 
     alg_run = "PPO"
 
-    agent_cls = get_agent_class(alg_run)
+    agent_cls = get_trainer_class(alg_run)
     config = deepcopy(agent_cls._default_config)
 
     config["num_workers"] = 5 # CHANGING THIS TO SEE THE RESULTS IN JUPYTER
     config["train_batch_size"] = horizon * n_rollouts
     # config["train_batch_size"] = 256
     config["gamma"] = 0.999  # discount rate
-    # print(f"config[model]: {config['model']}")
-    # config["model"].update({"fcnet_hiddens": [32, 32, 32]})
-    config["model"].update({"conv_filters":  [
-        [16, [8, 8], 4],
-        [32, [4, 4], 2],
-        [256, [11, 11], 1],
-    ]})
+    # config["model"].update({"conv_filters":  [
+    #     [16, [8, 8], 4],
+    #     [32, [4, 4], 2],
+    #     [256, [11, 11], 1],
+    # ]})
+    config["model"].update({"fcnet_hiddens":  [3,3]})
     # print(f"model config: {config['model']}")
     config["use_gae"] = True
     config["lambda"] = 0.97
     config["kl_target"] = 0.02
     config["num_sgd_iter"] = 10
     config["horizon"] = horizon
-    # config["use_pytorch"] = True
+    config["framework"] = "torch"
+    # config["vf_clip_param"] = 10.0
+    # config["model"]["use_lstm"] = True
+    # config["exploration_config"]["type"] = "EpsilonGreedy"
+    # config["vf_clip_param"] = 1000
     # config["num_gpus_per_worker"] = 1
     # config["num_cpus_per_worker"] = 0
     # config["num_cpus_for_driver"] = 0
+
+    print(config)
 
     if os.environ.get('https_proxy'):
         del os.environ['https_proxy']
@@ -206,12 +213,13 @@ def train_rllib(submodule, flags):
     policy_mapping_fn = getattr(submodule, "policy_mapping_fn", None)
     policies_to_train = getattr(submodule, "policies_to_train", None)
 
+    flags.num_steps = 200 # Change from 5000 to 200
+
     alg_run, gym_name, config = setup_exps_rllib(
         flow_params, n_cpus, n_rollouts,
         policy_graphs, policy_mapping_fn, policies_to_train)
 
-    ray.init(num_cpus=n_cpus+1, num_gpus=0, memory=30000 * 1024 * 1024, object_store_memory=20000 * 1024 * 1024)
-    print("hello", ray.get_gpu_ids())
+    ray.init(num_cpus=n_cpus+1, num_gpus=n_cpus+1, object_store_memory=15000 * 1024 * 1024)
     exp_config = {
         "run": alg_run,
         "env": gym_name,
@@ -225,6 +233,7 @@ def train_rllib(submodule, flags):
             "training_iteration": flags.num_steps,
         },
     }
+    
 
     if flags.checkpoint_path is not None:
         exp_config['restore'] = flags.checkpoint_path

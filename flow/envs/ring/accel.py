@@ -4,10 +4,16 @@ from flow.core import rewards
 from flow.envs.base import Env
 
 from gym.spaces.box import Box
+from flow.core.params import InitialConfig
+from flow.core.params import NetParams
+from copy import deepcopy
 
 import numpy as np
-from PIL import Image
 import cv2
+import os
+import random
+from PIL import Image
+
 
 ADDITIONAL_ENV_PARAMS = {
     # maximum acceleration for autonomous vehicles, in m/s^2
@@ -79,6 +85,18 @@ class AccelEnv(Env):
         self.prev_pos = dict()
         self.absolute_position = dict()
 
+        self.avg_velocity_collector = []
+        self.min_velocity_collector = []
+        self.rl_velocity_collector = []
+        self.rl_accel_collector = []
+        self.rl_accel_realized_collector = []
+
+        self.memory = []
+
+        self.img_dim = 42
+
+        self.results_dir_name = "trial_results"
+
         super().__init__(env_params, sim_params, network, simulator)
 
     @property
@@ -95,12 +113,15 @@ class AccelEnv(Env):
         """See class definition."""
         self.obs_var_labels = ['Velocity', 'Absolute_pos']
         return Box(
-            low=0,
-            high=1,
-            shape=(2 * self.initial_vehicles.num_vehicles, ),
+            low=-float('inf'),
+            high=float('inf'),
+            shape=(self.img_dim,self.img_dim, ),
+            # shape=(2 * self.initial_vehicles.num_vehicles, ),
+            # shape=(3,), # Partial observations
             dtype=np.float32)
 
     def _apply_rl_actions(self, rl_actions):
+        # print(rl_actions)
         """See class definition."""
         sorted_rl_ids = [
             veh_id for veh_id in self.sorted_ids
@@ -110,13 +131,66 @@ class AccelEnv(Env):
 
     def compute_reward(self, rl_actions, **kwargs):
         """See class definition."""
-        if self.env_params.evaluate:
-            return np.mean(self.k.vehicle.get_speed(self.k.vehicle.get_ids()))
-        else:
-            return rewards.desired_velocity(self, fail=kwargs['fail'])
+
+        '''
+            Original reward function within Accel class
+        '''
+        # if self.env_params.evaluate:
+        #     return np.mean(self.k.vehicle.get_speed(self.k.vehicle.get_ids()))
+        # else:
+        #     return rewards.desired_velocity(self, fail=kwargs['fail'])
+
+        if rl_actions is None:
+            return 0
+
+        vel = np.array([
+            self.k.vehicle.get_speed(veh_id)
+            for veh_id in self.k.vehicle.get_ids()
+        ])
+
+        if any(vel < -100) or kwargs['fail']:
+            return 0.
+
+        # reward average velocity
+        eta_2 = 4.
+        reward = eta_2 * np.mean(vel) / 20
+
+        # punish accelerations (should lead to reduced stop-and-go waves)
+        eta = 3  # 0.25
+        mean_actions = np.mean(np.abs(np.array(rl_actions)))
+        accel_threshold = 0
+
+        if mean_actions > accel_threshold:
+            reward += eta * (accel_threshold - mean_actions)
+
+        return float(reward)
 
     def get_state(self):
         """See class definition."""
+
+        
+        # Save the avg and min velocity collectors to a file
+        # if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
+             
+        #     if not os.path.exists(f"../../michael_files/{self.results_dir_name}/"):
+        #        os.mkdir(f"./michael_files/{self.results_dir_name}/")
+         
+        #     with open(f"../../michael_files/{self.results_dir_name}/avg_velocity.txt", "a") as f:
+        #         np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
+        #         f.write("\n")
+            
+        #     with open(f"../../michael_files/{self.results_dir_name}/min_velocity.txt", "a") as f:
+        #         np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
+        #         f.write("\n")
+            
+        #     with open(f"../../michael_files/{self.results_dir_name}/rl_velocity.txt", "a") as f:
+        #         np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
+        #         f.write("\n")
+        
+        #     with open(f"../../michael_files/{self.results_dir_name}/rl_accel_realized.txt", "a") as f:
+        #         np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
+        #         f.write("\n")
+
 
         # speed = np.asarray([self.k.vehicle.get_speed(veh_id) for veh_id in self.k.vehicle.get_ids()])
         # self.avg_velocity_collector.append(np.mean(speed))
@@ -124,70 +198,47 @@ class AccelEnv(Env):
 
         # rl_id = self.k.vehicle.get_rl_ids()[0]
         # self.rl_velocity_collector.append(self.k.vehicle.get_speed(rl_id))
-        # self.rl_accel_collector.append(self.k.vehicle.get_accel(rl_id))
         # self.rl_accel_realized_collector.append(self.k.vehicle.get_realized_accel(rl_id))
 
-        # # Save the avg and min velocity collectors to a file
-        # if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
-        #     print(self.step_counter)
-        #     print(len(self.avg_velocity_collector))
-        #     print(len(self.min_velocity_collector))
 
-        #     with open(f"/home/michael/Desktop/flow/michael_files/avg_velocity.txt", "a") as f:
-        #         np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline="")
-        #         f.write("\n")
-            
-        #     with open(f"/home/michael/Desktop/flow/michael_files/min_velocity.txt", "a") as f:
-        #         np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline="")
-        #         f.write("\n")
-            
-        #     with open(f"/home/michael/Desktop/flow/michael_files/rl_velocity.txt", "a") as f:
-        #         np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline="")
-        #         f.write("\n")
-
-        #     with open(f"/home/michael/Desktop/flow/michael_files/rl_accel.txt", "a") as f:
-        #         np.savetxt(f, np.asarray(self.rl_accel_collector), delimiter=",", newline="")
-        #         f.write("\n")
-        
-        #     with open(f"/home/michael/Desktop/flow/michael_files/rl_accel_realized.txt", "a") as f:
-        #         np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline="")
-        #         f.write("\n")
-
-        
         '''
             Following code is the original code from Cathy Wu 
         '''
-        speed = [self.k.vehicle.get_speed(veh_id) / self.k.network.max_speed()
-                 for veh_id in self.sorted_ids]
-        pos = [self.k.vehicle.get_x_by_id(veh_id) / self.k.network.length()
-               for veh_id in self.sorted_ids]
+        # speed = [self.k.vehicle.get_speed(veh_id) / self.k.network.max_speed()
+        #          for veh_id in self.sorted_ids]
+        # pos = [self.k.vehicle.get_x_by_id(veh_id) / self.k.network.length()
+        #        for veh_id in self.sorted_ids]
 
-        observation = np.array(speed + pos)
+        # observation = np.array(speed + pos)
+
+        '''
+            Following code is from Wave Attn and is partial obs
+        '''
+        # rl_id = self.k.vehicle.get_rl_ids()[0]
+        # lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
+
+        # # normalizers
+        # max_speed = 15.
+        # if self.env_params.additional_params['radius_ring'] is not None:
+        #     max_length = self.env_params.additional_params['radius_ring'][1]
+        # else:
+        #     max_length = self.k.network.length()
+
+        # observation = np.array([
+        #     self.k.vehicle.get_speed(rl_id) / max_speed,
+        #     (self.k.vehicle.get_speed(lead_id) -
+        #      self.k.vehicle.get_speed(rl_id)) / max_speed,
+        #     (self.k.vehicle.get_x_by_id(lead_id) -
+        #      self.k.vehicle.get_x_by_id(rl_id)) % self.k.network.length()
+        #     / max_length
+        # ])
 
         '''
             SUMO GUI Full Observations
             Following code uses screenshot from sumo-gui to train the model
         '''
-        # observation = Image.open(f"/home/michael/Desktop/flow_screenshots/state_{self.k.simulation.id}.jpeg")
-        # # observation = observation.crop((191, 0, 852, 661)) Keeping this line to save the numbers
-        # observation = observation.resize((84,84)) # Resizing the image to be smaller
-        # observation = np.asarray(observation) / 255.
-
-        '''
-            SUMO GUI Partial Observations
-            Following code uses partial observations from screenshots from sumo-gui to train the model
-            Uses numpy to find red pixels within the screenshot
-        '''
-        # sight_radius = self.sim_params.sight_radius
-        # observation = Image.open(f"/home/michael/Desktop/flow/sumo_full_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")
-        # observation = np.moveaxis(np.asarray(observation), -1, 0)
-        # redpix, greenpix = observation[0], observation[1] 
-        # redpix_indices = np.where(np.logical_and(redpix > 180, redpix < 220, greenpix < 50))
-        # y, x = int(np.mean(redpix_indices[0])), int(np.mean(redpix_indices[1]))
-        # observation = Image.fromarray(np.moveaxis(observation, 0, -1))
-        # left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
-        # observation = observation.crop((left, upper, right, lower))
-        # # observation.save(f'./sumo_partial_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+        # observation = Image.open(f"./sumo_obs/state_{self.k.simulation.id}.jpeg")
+        # observation = observation.convert("L")
         # observation = observation.resize((84,84)) # Resizing the image to be smaller
         # observation = np.asarray(observation) / 255.
 
@@ -196,81 +247,43 @@ class AccelEnv(Env):
             Following code is another method for getting partial observations from the sumo-gui screenshots
             Uses the 2D position of the RL vehicle for a more accurate screenshot
         '''
-        # sight_radius = self.sim_params.sight_radius
-        # rl_id = self.k.vehicle.get_rl_ids()[0]
-        # x, y = self.k.vehicle.get_2d_position(rl_id)
-        # x, y = self.map_coordinates(x, y)
-        # observation = Image.open(f"/home/michael/Desktop/flow/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
-        # left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
-        # observation = observation.crop((left, upper, right, lower))
-        # observation = observation.convert("L")
-        # observation = observation.resize((84,84))
-        # # observation.save(f'./sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+        sight_radius = self.sim_params.sight_radius
+        rl_id = self.k.vehicle.get_rl_ids()[0]
+        x, y = self.k.vehicle.get_2d_position(rl_id)
+        x, y = self.map_coordinates(x, y)
+        observation = Image.open(f"../../michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+        left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
+        observation = observation.crop((left, upper, right, lower))
+        observation = observation.convert("L") # Grayscale the image
+        observation = observation.resize((self.img_dim,self.img_dim)) # Resize to fit the convolution layers
+        observation = np.asarray(observation)
+        observation = self.cv2_clipped_zoom(observation, 1.5) # Zoom in on the image
+        height, width = observation.shape[0:2]
+        sight_radius = height / 2
+        mask = np.zeros((height, width), np.uint8)
+        cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+                   int(sight_radius), (255, 255, 255), thickness=-1)
+        observation = cv2.bitwise_and(observation, observation, mask=mask)
+        # observation = Image.fromarray(observation)
+        # observation.save(f'../../michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
         # observation = np.asarray(observation)
-        # # observation = self.gaussian_noise(observation, 50)
-        # height, width = observation.shape[0:2]
-        # sight_radius = height / 2
-        # mask = np.zeros((height, width), np.uint8)
-        # cv2.circle(mask, (int(sight_radius), int(sight_radius)),
-        #            int(sight_radius), (255, 255, 255), thickness=-1)
-        # observation = cv2.bitwise_and(observation, observation, mask=mask)
-        # observation = observation / 255.
+        observation = observation / 255.
 
-        '''
-            Pyglet Renderer Full Observations
-            Following code uses the Pyglet renderer with frames of the full observation space
-        '''
-        # print(type(self.frame))
-        # print(self.frame.shape)
-        # observation = Image.fromarray(np.asarray(self.frame))
-        # observation = observation.resize((84,84))
-        # observation = np.asarray(observation) / 255.
-
-        '''
-            Pyglet Renderer Partial Observations
-            Following code uses the Pyglet renderer with sights around the RL vehicles for local observation
-        '''
-        # if np.asarray(self.sights).shape[0] == 0: # When the rendering is initialized, the shape is (0,)
-        #     observation = np.uint8(np.full((100,100,3), 100)) # Create a blank gray square image
-        #     observation = Image.fromarray(observation)
-        # else: 
-        #     observation = Image.fromarray(np.asarray(self.sights[0]))
-        # observation.save("./sight_example.png")
-        # observation = observation.resize((84,84))
-        # observation = np.asarray(observation) / 255.
-
-        '''
-            Matplotlib Full Observations
-            Following code uses Matplotlib to render frames based on the positions of the vehicle, which
-            the RL controller learns on. 
-        '''
-        # car_pos = [int(self.k.vehicle.get_x_by_id(item)) for item in self.k.vehicle.get_ids()]
-        # observation = self.plt_frame(car_pos)
-
-
-        '''
-            Matplotlib Partial Observations
-            Following code uses Matplotlib to render frames based on the positions of the vehicle, which
-            the RL controller learns on. 
-        '''
-        # sight_radius = self.sim_params.sight_radius
-        # car_pos = [int(self.k.vehicle.get_x_by_id(item)) for item in self.k.vehicle.get_ids()]
-        # observation = self.plt_frame(car_pos)
-        # red_pixel = np.array([255, 0, 0])
-        # red_idx = np.where(np.all(observation == red_pixel, axis=-1))
-        # y, x = np.mean(red_idx[0]), np.mean(red_idx[1])
-        # x_min = int(x - sight_radius)
-        # y_min = int(y - sight_radius)
-        # x_max = int(x + sight_radius)
-        # y_max = int(y + sight_radius)
-        # observation = observation[y_min:y_max, x_min:x_max]
-        # observation = observation / 255.
 
         '''
             All white observations to make sure that learning on images is working and that the policy
             is not just randomly learning to do the correct behavior.
         '''
         # observation = np.zeros((84,84)) / 255.
+
+        # if self.step_counter == 0:
+        #     for i in range(2):
+        #         self.memory.append(observation)
+        # else:
+        # self.memory.pop(0)
+        # self.memory.insert(len(self.memory), observation)
+
+        # return np.moveaxis(np.asarray(self.memory),0,-1)
 
 
         return observation
@@ -282,9 +295,9 @@ class AccelEnv(Env):
         update the sorting of vehicles using the self.sorted_ids variable.
         """
         # specify observed vehicles
-        if self.k.vehicle.num_rl_vehicles > 0:
-            for veh_id in self.k.vehicle.get_human_ids():
-                self.k.vehicle.set_observed(veh_id)
+        # if self.k.vehicle.num_rl_vehicles > 0:
+        #     for veh_id in self.k.vehicle.get_human_ids():
+        #         self.k.vehicle.set_observed(veh_id)
 
         # update the "absolute_position" variable
         for veh_id in self.k.vehicle.get_ids():
@@ -327,14 +340,76 @@ class AccelEnv(Env):
         This also includes updating the initial absolute position and previous
         position.
         """
-        obs = super().reset()
+        self.avg_velocity_collector = []
+        self.min_velocity_collector = []
+        self.rl_velocity_collector = []
+        self.rl_accel_collector = []
+        self.rl_accel_realized_collector = []
+
+        self.memory = []
+        self.memory.append(np.zeros((84,84)))
+        self.memory.append(np.zeros((84,84)))
+        self.memory.append(np.zeros((84,84)))
+
+        # skip if ring length is None
+        if self.env_params.additional_params['radius_ring'] is None:
+            return super().reset()
+
+        # reset the step counter
+        self.step_counter = 0
+
+        # update the network
+        initial_config = InitialConfig()
+        radius_ring = random.randint(
+            10*self.env_params.additional_params['radius_ring'][0],
+            10*self.env_params.additional_params['radius_ring'][1]) / 10.0
+        additional_net_params = {
+            'radius_ring':
+                radius_ring,
+            'lanes':
+                self.net_params.additional_params['lanes'],
+            'speed_limit':
+                self.net_params.additional_params['speed_limit'],
+            'resolution':
+                self.net_params.additional_params['resolution']
+        }
+        net_params = NetParams(additional_params=additional_net_params)
+
+        self.network = self.network.__class__(
+            self.network.orig_name, self.network.vehicles,
+            net_params, initial_config)
+        self.k.vehicle = deepcopy(self.initial_vehicles)
+        self.k.vehicle.kernel_api = self.k.kernel_api
+        self.k.vehicle.master_kernel = self.k
+
+ 
+        print('\n-----------------------')
+        print('ring radius:', net_params.additional_params['radius_ring'])
+        print('-----------------------')
+
+        # restart the sumo instance
+        self.restart_simulation(
+            sim_params=self.sim_params,
+            render=self.sim_params.render)
 
         for veh_id in self.k.vehicle.get_ids():
             self.absolute_position[veh_id] = self.k.vehicle.get_x_by_id(veh_id)
             self.prev_pos[veh_id] = self.k.vehicle.get_x_by_id(veh_id)
 
-        return obs
-        
+        return super().reset()
+
+    def map_coordinates(self, x, y):
+        offset, boundary_width = self.k.simulation.offset, self.k.simulation.boundary_width
+        half_width = boundary_width / 2
+
+        x, y = x - offset, y - offset
+        x, y = x + half_width, y + half_width
+        x, y = x / boundary_width, y / boundary_width
+        x, y = x * 300, 300 - (y * 300)
+
+        return x, y
+
+
     def cv2_clipped_zoom(self, img, zoom_factor=0):
 
         """

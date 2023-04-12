@@ -9,9 +9,9 @@ from flow.networks import FigureEightNetwork
 # time horizon of a single rollout
 HORIZON = 1500
 # number of rollouts per training iteration
-N_ROLLOUTS = 20
+N_ROLLOUTS = 10
 # number of parallel workers
-N_CPUS = 2
+N_CPUS = 10
 
 # We place one autonomous vehicle and 13 human-driven vehicles in the network
 vehicles = VehicleParams()
@@ -32,7 +32,7 @@ vehicles.add(
     routing_controller=(ContinuousRouter, {}),
     car_following_params=SumoCarFollowingParams(
         speed_mode="obey_safe_speed",
-        decel=1.5,
+        # decel=1.5,
     ),
     num_vehicles=1)
 
@@ -52,24 +52,36 @@ flow_params = dict(
     # sumo-related parameters (see flow.core.params.SumoParams)
     sim=SumoParams(
         sim_step=0.1,
-        render=False,
+        render=True,
+        save_render=False,
+        restart_instance=False,
+        sight_radius=30,
+        show_radius=False,
+        # emission_path="./michael_files/emission_collection/"
     ),
 
     # environment related parameters (see flow.core.params.EnvParams)
     env=EnvParams(
         horizon=HORIZON,
+        warmup_steps=750,
         additional_params={
             'target_velocity': 20,
             'max_accel': 3,
             'max_decel': 3,
-            'sort_vehicles': False
+            'sort_vehicles': False,
+            'radius_ring': [20,30]
         },
     ),
 
     # network-related parameters (see flow.core.params.NetParams and the
     # network's documentation or ADDITIONAL_NET_PARAMS component)
     net=NetParams(
-        additional_params=ADDITIONAL_NET_PARAMS.copy(),
+        additional_params={
+            'radius_ring': 32,
+            'lanes': 1,
+            'speed_limit': 30,
+            'resolution': 40
+        },
     ),
 
     # vehicles to be placed in the network at the start of a rollout (see
