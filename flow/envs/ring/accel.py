@@ -116,7 +116,7 @@ class AccelEnv(Env):
         obs_type = self.env_params.additional_params['obs_type']
 
         if obs_type == "precise":
-            obs_shape = (3, )
+            obs_shape = (2 * self.initial_vehicles.num_vehicles, )
         elif obs_type == "image":
             obs_shape = (self.img_dim, self.img_dim, )
         elif obs_type == "partial":
@@ -296,7 +296,7 @@ class AccelEnv(Env):
                 is not just randomly learning to do the correct behavior.
             '''
             observation = np.zeros((84,84)) / 255.
-            
+
 
         if self.env_params.additional_params['memory']:
             return np.moveaxis(np.asarray(self.memory),0,-1)
