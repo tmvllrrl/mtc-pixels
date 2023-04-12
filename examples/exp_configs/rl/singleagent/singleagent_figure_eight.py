@@ -13,11 +13,11 @@ N_ROLLOUTS = 10
 # number of parallel workers
 N_CPUS = 10
 
-SIM_OBS_TYPE = "precise" # Options: ["precise", "image"]
-ENV_OBS_TYPE = "precise" # Options: ["precise", "image", "partial", "blank"]
+OBS_TYPE = "precise" # Options: ["precise", "image", "partial", "blank"]
 EVALUTE = False
 REWARD_FUNC = "accel" # Options: ["accel", "wave"]
 MEMORY = False
+CIRCLE_MASK = True
 
 # We place one autonomous vehicle and 13 human-driven vehicles in the network
 vehicles = VehicleParams()
@@ -65,7 +65,7 @@ flow_params = dict(
         show_radius=False,
         additional_params={
             "network": "figure_8",
-            "obs_type": SIM_OBS_TYPE, 
+            "obs_type": OBS_TYPE, 
         }
         # emission_path="./michael_files/emission_collection/"
     ),
@@ -80,11 +80,12 @@ flow_params = dict(
             "max_decel": 3,
             "sort_vehicles": False,
             "radius_ring": [20,30],
-            "obs_type": ENV_OBS_TYPE, 
+            "obs_type": OBS_TYPE, 
             "evaluate": EVALUTE,
             "img_dim": 84,
             "reward": REWARD_FUNC,
-            "memory": MEMORY
+            "memory": MEMORY,
+            "circle_mask": CIRCLE_MASK
         },
     ),
 

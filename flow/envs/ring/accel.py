@@ -267,16 +267,18 @@ class AccelEnv(Env):
             observation = Image.open(f"../../michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
             left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
             observation = observation.crop((left, upper, right, lower))
-            observation = observation.convert("L") # Grayscale the image
-            observation = observation.resize((self.img_dim,self.img_dim)) # Resize to fit the convolution layers
+            observation = observation.convert("L").resize((self.img_dim, self.img_dim))
             observation = np.asarray(observation)
             observation = self.cv2_clipped_zoom(observation, 1.5) # Zoom in on the image
-            height, width = observation.shape[0:2]
-            sight_radius = height / 2
-            mask = np.zeros((height, width), np.uint8)
-            cv2.circle(mask, (int(sight_radius), int(sight_radius)),
-                    int(sight_radius), (255, 255, 255), thickness=-1)
-            observation = cv2.bitwise_and(observation, observation, mask=mask)
+
+            if self.env_params.additional_params['circle_mask']:
+                height, width = observation.shape[0:2]
+                sight_radius = height / 2
+                mask = np.zeros((height, width), np.uint8)
+                cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+                        int(sight_radius), (255, 255, 255), thickness=-1)
+                observation = cv2.bitwise_and(observation, observation, mask=mask)
+
             # observation = Image.fromarray(observation)
             # observation.save(f'../../michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
             # observation = np.asarray(observation)
