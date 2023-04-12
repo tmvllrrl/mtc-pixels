@@ -277,7 +277,7 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         """See class definition."""
         obs_type = self.env_params.additional_params['obs_type']
 
-        if obs_type == "og":
+        if obs_type == "precise":
             shape = (3,)
         elif obs_type == "image":
             shape = (84, 84, )
@@ -350,7 +350,7 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
 
         obs_type = self.env_params.additional_params['obs_type']
 
-        if obs_type == "og":
+        if obs_type == "precise":
             '''
                 Following code is the original code from Cathy Wu 
             '''

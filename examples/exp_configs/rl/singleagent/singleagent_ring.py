@@ -17,8 +17,8 @@ N_ROLLOUTS = 20
 N_CPUS = 10
 
 NETWORK = "ring"
-SIM_OBS_TYPE = "image" # Options: "image" or "precise"
-ENV_OBS_TYPE = "image" # Options: "og", "only_pos", "image", "blank"
+SIM_OBS_TYPE = "precise" # Options: "image" or "precise"
+ENV_OBS_TYPE = "precise" # Options: "precise", "only_pos", "image", "blank"
 EVALUATE = False
 
 
