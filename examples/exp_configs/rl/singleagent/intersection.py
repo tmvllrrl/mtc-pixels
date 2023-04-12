@@ -43,7 +43,8 @@ RL_PENETRATION = 0.2
     precise_og = includes information about traffic lights
     precise_notl = does not include information pertaining to traffic lights
 '''
-OBS_TYPE = "precise_notl"  
+OBS_TYPE = "precise_notl"
+CIRCLE_MASK = False  
 
 
 # we place a sufficient number of vehicles to ensure they confirm with the
@@ -158,6 +159,7 @@ flow_params = dict(
             "discrete": False,
             "tl_type": "actuated",
             "obs_type": OBS_TYPE,
+            "circle_mask": CIRCLE_MASK,
             "num_rl": 5,
             "img_dim": 84
         },
