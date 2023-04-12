@@ -632,13 +632,13 @@ class TrafficLightGridPOEnv(TrafficLightGridEnv):
         # used during visualization
         self.observed_ids = []
 
-        self.num_rl = self.env_params.additional_params['num_rl']
+        self.num_rl = env_params.additional_params['num_rl']
         # queue of rl vehicles waiting to be controlled
         self.rl_queue = collections.deque()
         # names of the rl vehicles controlled at any step
         self.rl_veh = []
         
-        self.img_dim = self.env_params.additional_params['img_dim']
+        self.img_dim = env_params.additional_params['img_dim']
 
     @property
     def action_space(self):

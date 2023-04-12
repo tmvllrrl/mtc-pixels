@@ -847,10 +847,10 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
                     ]
                 index += 1
         
-        self.num_rl = self.env_params.additional_params['num_rl']
+        self.num_rl = env_params.additional_params['num_rl']
         self.rl_queue = collections.deque()
         self.rl_veh = []
-        self.img_dim = self.env_params.additional_params['img_dim']
+        self.img_dim = env_params.additional_params['img_dim']
 
     @property
     def observation_space(self):
