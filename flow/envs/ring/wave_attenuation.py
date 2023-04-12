@@ -117,15 +117,15 @@ class WaveAttenuationEnv(Env):
             shape=(self.initial_vehicles.num_rl_vehicles, ),
             dtype=np.float32)
 
-    # @property
-    # def observation_space(self):
-    #     """See class definition."""
-    #     self.obs_var_labels = ["Velocity", "Absolute_pos"]
-    #     return Box(
-    #         low=0,
-    #         high=1,
-    #         shape=(2 * self.initial_vehicles.num_vehicles, ),
-    #         dtype=np.float32)
+    @property
+    def observation_space(self):
+        """See class definition."""
+        self.obs_var_labels = ["Velocity", "Absolute_pos"]
+        return Box(
+            low=0,
+            high=1,
+            shape=(2 * self.initial_vehicles.num_vehicles, ),
+            dtype=np.float32)
 
     def _apply_rl_actions(self, rl_actions):
         """See class definition."""
@@ -153,7 +153,7 @@ class WaveAttenuationEnv(Env):
         reward = eta_2 * np.mean(vel) / 20
 
         # punish accelerations (should lead to reduced stop-and-go waves)
-        eta = 3  # 0.25
+        eta = 4  # 0.25
         mean_actions = np.mean(np.abs(np.array(rl_actions)))
         accel_threshold = 0
 
@@ -162,14 +162,14 @@ class WaveAttenuationEnv(Env):
 
         return float(reward)
 
-    # def get_state(self):
-    #     """See class definition."""
-    #     speed = [self.k.vehicle.get_speed(veh_id) / self.k.network.max_speed()
-    #              for veh_id in self.k.vehicle.get_ids()]
-    #     pos = [self.k.vehicle.get_x_by_id(veh_id) / self.k.network.length()
-    #            for veh_id in self.k.vehicle.get_ids()]
+    def get_state(self):
+        """See class definition."""
+        speed = [self.k.vehicle.get_speed(veh_id) / self.k.network.max_speed()
+                 for veh_id in self.k.vehicle.get_ids()]
+        pos = [self.k.vehicle.get_x_by_id(veh_id) / self.k.network.length()
+               for veh_id in self.k.vehicle.get_ids()]
 
-    #     return np.array(speed + pos)
+        return np.array(speed + pos)
 
     def additional_command(self):
         """Define which vehicles are observed for visualization purposes."""
@@ -449,50 +449,7 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         x, y = x / boundary_width, y / boundary_width
         x, y = x * 300, 300 - (y * 300)
 
-        return x, y
-
-    def plt_frame(self, positions):
-        # positions = [int(i) for i in positions]
-
-        angle = np.linspace(0,2*np.pi, int(self.k.network.length()) + 1)
-        radius = 0.4
-        x = radius * np.cos( angle )
-        y = radius * np.sin( angle )
-
-        fig, ax = plt.subplots(figsize=(4,4), dpi = 100)
-        ax.axis("off")
-        ax.set_aspect(1)
-
-        ax.plot(x,y, linewidth=0.25, color='k')
-
-        ax.plot(x[positions[-1]], y[positions[-1]], 'or', markersize=8)
-        ax.plot(x[positions[0]], y[positions[0]], 'oy', markersize=8)
-        for i in range(1, len(positions)-1):
-            ax.plot(x[positions[i]], y[positions[i]], 'oy', markersize=8)
-
-        numpy_fig = self.mplfig_to_npimage(fig)  # convert it to a numpy array
-        plt.close()
-        return numpy_fig
-
-    '''
-        Original code gotten from MoviePy's GitHub
-    '''
-    def mplfig_to_npimage(self, fig):
-        """Converts a matplotlib figure to a RGB frame after updating the canvas."""
-        #  only the Agg backend now supports the tostring_rgb function
-        from matplotlib.backends.backend_agg import FigureCanvasAgg
-
-        canvas = FigureCanvasAgg(fig)
-        canvas.draw()  # update/draw the elements
-
-        # get the width and the height to resize the matrix
-        l, b, w, h = canvas.figure.bbox.bounds
-        w, h = int(w), int(h)
-
-        #  exports the canvas to a string buffer and then to a numpy nd.array
-        buf = canvas.tostring_rgb()
-        image = np.frombuffer(buf, dtype=np.uint8)
-        return image.reshape(h, w, 3)
+        return x, y    
     
     def cv2_clipped_zoom(self, img, zoom_factor=0):
 
