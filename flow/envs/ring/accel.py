@@ -14,6 +14,7 @@ import os
 import random
 from PIL import Image
 
+
 ADDITIONAL_ENV_PARAMS = {
     # maximum acceleration for autonomous vehicles, in m/s^2
     'max_accel': 3,
@@ -166,6 +167,7 @@ class AccelEnv(Env):
 
     def get_state(self):
         """See class definition."""
+
         
         # Save the avg and min velocity collectors to a file
         # if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
@@ -188,6 +190,7 @@ class AccelEnv(Env):
         #     with open(f"../../michael_files/{self.results_dir_name}/rl_accel_realized.txt", "a") as f:
         #         np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
         #         f.write("\n")
+
 
         # speed = np.asarray([self.k.vehicle.get_speed(veh_id) for veh_id in self.k.vehicle.get_ids()])
         # self.avg_velocity_collector.append(np.mean(speed))
@@ -266,6 +269,7 @@ class AccelEnv(Env):
         # observation = np.asarray(observation)
         observation = observation / 255.
 
+
         '''
             All white observations to make sure that learning on images is working and that the policy
             is not just randomly learning to do the correct behavior.
@@ -280,6 +284,7 @@ class AccelEnv(Env):
         # self.memory.insert(len(self.memory), observation)
 
         # return np.moveaxis(np.asarray(self.memory),0,-1)
+
 
         return observation
 
@@ -403,6 +408,7 @@ class AccelEnv(Env):
         x, y = x * 300, 300 - (y * 300)
 
         return x, y
+
 
     def cv2_clipped_zoom(self, img, zoom_factor=0):
 

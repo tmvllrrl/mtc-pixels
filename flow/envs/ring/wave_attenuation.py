@@ -26,6 +26,7 @@ from scipy.optimize import fsolve
 import uuid
 import time
 import os
+
 import cv2
 import matplotlib.pyplot as plt
 
@@ -281,6 +282,7 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
                 shape=(1,), # Removed velocity obs.
                 dtype=np.float32)
 
+
     def get_state(self):
         """See class definition."""
 
@@ -339,24 +341,24 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         '''
             Following code is the original code from Cathy Wu 
         '''
-        # rl_id = self.k.vehicle.get_rl_ids()[0]
-        # lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
+        rl_id = self.k.vehicle.get_rl_ids()[0]
+        lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
 
-        # # normalizers
-        # max_speed = 15.
-        # if self.env_params.additional_params['ring_length'] is not None:
-        #     max_length = self.env_params.additional_params['ring_length'][1]
-        # else:
-        #     max_length = self.k.network.length()
+        # normalizers
+        max_speed = 15.
+        if self.env_params.additional_params['ring_length'] is not None:
+            max_length = self.env_params.additional_params['ring_length'][1]
+        else:
+            max_length = self.k.network.length()
 
-        # observation = np.array([
-        #     self.k.vehicle.get_speed(rl_id) / max_speed,
-        #     (self.k.vehicle.get_speed(lead_id) -
-        #      self.k.vehicle.get_speed(rl_id)) / max_speed,
-        #     (self.k.vehicle.get_x_by_id(lead_id) -
-        #      self.k.vehicle.get_x_by_id(rl_id)) % self.k.network.length()
-        #     / max_length
-        # ])
+        observation = np.array([
+            self.k.vehicle.get_speed(rl_id) / max_speed,
+            (self.k.vehicle.get_speed(lead_id) -
+             self.k.vehicle.get_speed(rl_id)) / max_speed,
+            (self.k.vehicle.get_x_by_id(lead_id) -
+             self.k.vehicle.get_x_by_id(rl_id)) % self.k.network.length()
+            / max_length
+        ])
 
         '''
             Following code is the original code from Cathy Wu 
@@ -547,62 +549,3 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
 # Command to clear memory cache.
 # sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches'
 
-
-        '''
-            Pyglet Renderer Full Observations
-            Following code uses the Pyglet renderer with frames of the full observation space
-        '''
-        # print(type(self.frame))
-        # print(self.frame.shape)
-        # observation = Image.fromarray(np.asarray(self.frame))
-        # observation = observation.resize((84,84))
-        # observation = np.asarray(observation) / 255.
-
-        '''
-            Pyglet Renderer Partial Observations
-            Following code uses the Pyglet renderer with sights around the RL vehicles for local observation
-        '''
-        # if np.asarray(self.sights).shape[0] == 0: # When the rendering is initialized, the shape is (0,)
-        #     observation = np.uint8(np.full((100,100,3), 100)) # Create a blank gray square image
-        #     observation = Image.fromarray(observation)
-        # else: 
-        #     observation = Image.fromarray(np.asarray(self.sights[0]))
-        # observation.save("./sight_example.png")
-        # observation = observation.resize((84,84))
-        # observation = np.asarray(observation) / 255.
-
-        '''
-            Matplotlib Full Observations
-            Following code uses Matplotlib to render frames based on the positions of the vehicle, which
-            the RL controller learns on. 
-        '''
-        # car_pos = [int(self.k.vehicle.get_x_by_id(item)) for item in self.k.vehicle.get_ids()]
-        # observation = self.plt_frame(car_pos)
-
-
-        '''
-            Matplotlib Partial Observations
-            Following code uses Matplotlib to render frames based on the positions of the vehicle, which
-            the RL controller learns on. 
-        '''
-        # sight_radius = self.sim_params.sight_radius
-        # car_pos = [int(self.k.vehicle.get_x_by_id(item)) for item in self.k.vehicle.get_ids()]
-        # observation = self.plt_frame(car_pos)
-        # red_pixel = np.array([255, 0, 0])
-        # red_idx = np.where(np.all(observation == red_pixel, axis=-1))
-        # y, x = np.mean(red_idx[0]), np.mean(red_idx[1])
-        # x_min = int(x - sight_radius)
-        # y_min = int(y - sight_radius)
-        # x_max = int(x + sight_radius)
-        # y_max = int(y + sight_radius)
-        # observation = observation[y_min:y_max, x_min:x_max]
-        # height, width = observation.shape[0:2]
-        # sight_radius = height / 2
-        # mask = np.zeros((height, width), np.uint8)
-        # cv2.circle(mask, (int(sight_radius), int(sight_radius)),
-        #            int(sight_radius), (255, 255, 255), thickness=-1)
-        # observation = cv2.bitwise_and(observation, observation, mask=mask)
-        # observation = Image.fromarray(observation)
-        # observation = observation.convert("L")
-        # observation = observation.resize((84,84))
-        # observation = np.asarray(observation) / 255.
