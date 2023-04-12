@@ -13,7 +13,6 @@ N_ROLLOUTS = 10
 # number of parallel workers
 N_CPUS = 10
 
-NETWORK = "figure_8"
 SIM_OBS_TYPE = "precise" # Options: ["precise", "image"]
 ENV_OBS_TYPE = "precise" # Options: ["precise", "image", "partial", "blank"]
 EVALUTE = False
@@ -65,7 +64,7 @@ flow_params = dict(
         sight_radius=30,
         show_radius=False,
         additional_params={
-            "network": NETWORK,
+            "network": "figure_8",
             "obs_type": SIM_OBS_TYPE, 
         }
         # emission_path="./michael_files/emission_collection/"

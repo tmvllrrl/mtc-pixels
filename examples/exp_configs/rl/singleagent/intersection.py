@@ -37,6 +37,15 @@ N_CPUS = 10
 
 RL_PENETRATION = 0.2
 
+'''
+    Options: ["precise_og", "precise_notl", "image"]
+
+    precise_og = includes information about traffic lights
+    precise_notl = does not include information pertaining to traffic lights
+'''
+OBS_TYPE = "precise_notl"  
+
+
 # we place a sufficient number of vehicles to ensure they confirm with the
 # total number specified above. We also use a "right_of_way" speed mode to
 # support traffic light compliance
@@ -133,6 +142,10 @@ flow_params = dict(
         render=True,
         sight_radius=84,
         show_radius=False,
+        additional_params={
+            "network": "intersection",
+            "obs_type": OBS_TYPE
+        }
     ),
 
     # environment related parameters (see flow.core.params.EnvParams)
@@ -143,7 +156,10 @@ flow_params = dict(
             "switch_time": 3,
             "num_observed": 2,
             "discrete": False,
-            "tl_type": "actuated"
+            "tl_type": "actuated",
+            "obs_type": OBS_TYPE,
+            "num_rl": 5,
+            "img_dim": 84
         },
     ),
 

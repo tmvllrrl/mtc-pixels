@@ -16,7 +16,6 @@ N_ROLLOUTS = 20
 # number of parallel workers
 N_CPUS = 10
 
-NETWORK = "ring"
 SIM_OBS_TYPE = "precise" # Options: ["precise", "image"]
 ENV_OBS_TYPE = "precise" # Options: ["precise", "only_pos", "image", "blank"]
 EVALUATE = False
@@ -62,7 +61,7 @@ flow_params = dict(
         sight_radius=42,
         show_radius=False,
         additional_params={
-            "network": NETWORK,
+            "network": "ring",
             "obs_type": SIM_OBS_TYPE, # Options: "image" or "precise"
         }
         # emission_path="../../michael_files/emission_collection/"

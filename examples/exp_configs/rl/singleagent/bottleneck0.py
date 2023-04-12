@@ -22,7 +22,6 @@ N_CPUS = 5
 # number of rollouts per training iteration
 N_ROLLOUTS = 10
 
-NETWORK = "bottleneck"
 OBS_TYPE = "precise" # Options: ["precise", "image"]
 
 SCALING = 1
@@ -113,7 +112,7 @@ flow_params = dict(
         restart_instance=True,
         sight_radius=64,
         additional_params={
-            "network": NETWORK,
+            "network": "bottleneck",
             "obs_type": OBS_TYPE
         }
     ),
