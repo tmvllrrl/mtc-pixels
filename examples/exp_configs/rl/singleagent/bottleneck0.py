@@ -23,6 +23,7 @@ N_CPUS = 5
 N_ROLLOUTS = 10
 
 OBS_TYPE = "precise" # Options: ["precise", "image"]
+CIRCLE_MASK = True
 
 SCALING = 1
 NUM_LANES = 4 * SCALING  # number of lanes in the widest highway
@@ -135,6 +136,7 @@ flow_params = dict(
             "max_decel": 3,
             "inflow_range": [1200, 2500],
             "obs_type": OBS_TYPE,
+            "circle_mask": CIRCLE_MASK,
             "num_rl": 15,
             "img_dim": 84
         }

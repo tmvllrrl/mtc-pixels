@@ -1016,16 +1016,20 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
                 bev = bev.convert("L").resize((226,226))
                 bev = np.asarray(bev)
                 bev = self.cv2_clipped_zoom(bev, 1.5)
-                height, width = bev.shape[0:2]
-                sight_radius = height / 2
-                mask = np.zeros((height, width), np.uint8)
-                cv2.circle(mask, (int(sight_radius), int(sight_radius)),
-                        int(sight_radius), (255, 255, 255), thickness=-1)
-                bev = cv2.bitwise_and(bev, bev, mask=mask)
-                bev = Image.fromarray(bev)
-                bev.save(f'../../michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}_{i}.png')
-                bev = bev.resize((self.img_dim, self.img_dim))
-                bev = np.asarray(bev)
+
+                if self.env_params.additional_params['circle_mask']:
+                    height, width = bev.shape[0:2]
+                    sight_radius = height / 2
+                    mask = np.zeros((height, width), np.uint8)
+                    cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+                            int(sight_radius), (255, 255, 255), thickness=-1)
+                    bev = cv2.bitwise_and(bev, bev, mask=mask)
+
+                # bev = Image.fromarray(bev)
+                # bev.save(f'../../michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}_{i}.png')
+                # bev = bev.resize((self.img_dim, self.img_dim))
+                # bev = np.asarray(bev)
+                
                 bev = bev / 255.
 
                 observation[i] = bev
