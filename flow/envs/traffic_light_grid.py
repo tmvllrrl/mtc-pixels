@@ -828,6 +828,7 @@ class TrafficLightGridPOEnv(TrafficLightGridEnv):
 
         return observation
 
+
     def _apply_rl_actions(self, rl_actions):
         """See class definition."""
         '''
@@ -856,11 +857,6 @@ class TrafficLightGridPOEnv(TrafficLightGridEnv):
             return (- rewards.min_delay_unscaled(self) +
                     rewards.penalize_standstill(self, gain=0.2))
 
-        # if self.env_params.evaluate:
-        #     return - rewards.min_delay_unscaled(self)
-        # else:
-        #     return (rewards.penalize_standstill(self, gain=1) +
-        #             rewards.penalize_near_standstill(self, gain=0.2))
 
     def additional_command(self):
         """See class definition."""
