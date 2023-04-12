@@ -101,7 +101,7 @@ class WaveAttenuationEnv(Env):
         self.rl_accel_realized_collector = []
 
         self.memory = []
-        self.img_dim = 84
+        self.img_dim = env_params.additional_params['img_dim']
 
         self.rl_action_collector = []
 
@@ -275,12 +275,21 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
     @property
     def observation_space(self):
         """See class definition."""
-        return Box(low=-float('inf'), 
+        obs_type = self.env_params.additional_params['obs_type']
+
+        if obs_type == "og":
+            shape = (3,)
+        elif obs_type == "image":
+            shape = (84, 84, )
+        elif obs_type == "only_pos":
+            shape = (1, )
+
+        obs_space = Box(low=-float('inf'), 
                 high=float('inf'),
-                # shape=(84,84,),
-                shape=(3, ), 
-                # shape=(1,), # Removed velocity obs.
+                shape=shape,
                 dtype=np.float32)
+
+        return obs_space
 
 
     def get_state(self):
@@ -291,140 +300,136 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
             Some of the files are used for graphs, others calculate some avg. 
             statistics on the data
         '''
-        # if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
-             
-        #     if not os.path.exists("../../michael_files/results_lengthX/"):
-        #        os.mkdir("../../michael_files/results_lengthX/")
-         
-        #     with open(f"../../michael_files/results_lengthX/avg_velocity.txt", "a") as f:
-        #         np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
-        #         f.write("\n")
+        if self.env_params.additional_params['evaluate']:
+            if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
+                
+                if not os.path.exists("../../michael_files/results_lengthX/"):
+                    os.mkdir("../../michael_files/results_lengthX/")
             
-        #     with open(f"../../michael_files/results_lengthX/min_velocity.txt", "a") as f:
-        #         np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
-        #         f.write("\n")
+                with open(f"../../michael_files/results_lengthX/avg_velocity.txt", "a") as f:
+                    np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
+                    f.write("\n")
+                
+                with open(f"../../michael_files/results_lengthX/min_velocity.txt", "a") as f:
+                    np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
+                    f.write("\n")
+                
+                with open(f"../../michael_files/results_lengthX/rl_velocity.txt", "a") as f:
+                    np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
+                    f.write("\n")
             
-        #     with open(f"../../michael_files/results_lengthX/rl_velocity.txt", "a") as f:
-        #         np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
-        #         f.write("\n")
-        
-        #     with open(f"../../michael_files/results_lengthX/rl_accel_realized.txt", "a") as f:
-        #         np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
-        #         f.write("\n")
+                with open(f"../../michael_files/results_lengthX/rl_accel_realized.txt", "a") as f:
+                    np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
+                    f.write("\n")
 
-        #     self.rl_action_collector = np.asarray(self.rl_action_collector)
-        #     np.savez("../../michael_files/rl_action_collector.npz", rl_actions=self.rl_action_collector)
+                self.rl_action_collector = np.asarray(self.rl_action_collector)
+                np.savez("../../michael_files/rl_action_collector.npz", rl_actions=self.rl_action_collector)
 
-        #     # self.space_time_collector = np.asarray(self.space_time_collector)
-        #     # np.savez("../../michael_files/space_time_collector.npz", space_time_collector=self.space_time_collector)
-        #     # plot_std(self.space_time_collector, horizon=5000, warmup=3000)
+                self.space_time_collector = np.asarray(self.space_time_collector)
+                np.savez("../../michael_files/space_time_collector.npz", space_time_collector=self.space_time_collector)
+                plot_std(self.space_time_collector, horizon=5000, warmup=3000)
 
-        # speed = np.asarray([self.k.vehicle.get_speed(veh_id) for veh_id in self.k.vehicle.get_ids()])
-        # self.avg_velocity_collector.append(np.mean(speed))
-        # self.min_velocity_collector.append(np.min(speed))
+            speed = np.asarray([self.k.vehicle.get_speed(veh_id) for veh_id in self.k.vehicle.get_ids()])
+            self.avg_velocity_collector.append(np.mean(speed))
+            self.min_velocity_collector.append(np.min(speed))
 
-        # rl_id = self.k.vehicle.get_rl_ids()[0]
-        # self.rl_velocity_collector.append(self.k.vehicle.get_speed(rl_id))
-        # self.rl_accel_realized_collector.append(self.k.vehicle.get_realized_accel(rl_id))
+            rl_id = self.k.vehicle.get_rl_ids()[0]
+            self.rl_velocity_collector.append(self.k.vehicle.get_speed(rl_id))
+            self.rl_accel_realized_collector.append(self.k.vehicle.get_realized_accel(rl_id))
 
-        # if self.step_counter % 10 == 0 and self.step_counter != self.env_params.horizon + self.env_params.warmup_steps:
-        #     st_state = []
-        #     for veh_id in self.k.vehicle.get_ids():
-        #         pos = self.k.vehicle.get_x_by_id(veh_id)
-        #         vel = self.k.vehicle.get_speed(veh_id)
+            if self.step_counter % 10 == 0 and self.step_counter != self.env_params.horizon + self.env_params.warmup_steps:
+                st_state = []
+                for veh_id in self.k.vehicle.get_ids():
+                    pos = self.k.vehicle.get_x_by_id(veh_id)
+                    vel = self.k.vehicle.get_speed(veh_id)
 
-        #         pos_vel = (pos, vel)
-        #         st_state.append(pos_vel)
+                    pos_vel = (pos, vel)
+                    st_state.append(pos_vel)
 
-        #     self.space_time_collector.append(st_state)
+                self.space_time_collector.append(st_state)
 
-        '''
-            Following code is the original code from Cathy Wu 
-        '''
-        rl_id = self.k.vehicle.get_rl_ids()[0]
-        lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
+        obs_type = self.env_params.additional_params['obs_type']
 
-        # normalizers
-        max_speed = 15.
-        if self.env_params.additional_params['ring_length'] is not None:
-            max_length = self.env_params.additional_params['ring_length'][1]
-        else:
-            max_length = self.k.network.length()
+        if obs_type == "og":
+            '''
+                Following code is the original code from Cathy Wu 
+            '''
+            rl_id = self.k.vehicle.get_rl_ids()[0]
+            lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
 
-        observation = np.array([
-            self.k.vehicle.get_speed(rl_id) / max_speed,
-            (self.k.vehicle.get_speed(lead_id) -
-             self.k.vehicle.get_speed(rl_id)) / max_speed,
-            (self.k.vehicle.get_x_by_id(lead_id) -
-             self.k.vehicle.get_x_by_id(rl_id)) % self.k.network.length()
-            / max_length
-        ])
+            # normalizers
+            max_speed = 15.
+            if self.env_params.additional_params['ring_length'] is not None:
+                max_length = self.env_params.additional_params['ring_length'][1]
+            else:
+                max_length = self.k.network.length()
 
-        '''
-            Following code is the original code from Cathy Wu 
-            However, modified to only look at the position of the AV
-            and leading vehicle
-        '''
-        # rl_id = self.k.vehicle.get_rl_ids()[0]
-        # lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
+            observation = np.array([
+                self.k.vehicle.get_speed(rl_id) / max_speed,
+                (self.k.vehicle.get_speed(lead_id) -
+                self.k.vehicle.get_speed(rl_id)) / max_speed,
+                (self.k.vehicle.get_x_by_id(lead_id) -
+                self.k.vehicle.get_x_by_id(rl_id)) % self.k.network.length()
+                / max_length
+            ])
 
-        # # normalizers
-        # max_speed = 15.
-        # if self.env_params.additional_params['ring_length'] is not None:
-        #     max_length = self.env_params.additional_params['ring_length'][1]
-        # else:
-        #     max_length = self.k.network.length()
+        elif obs_type == "only_pos":
+            '''
+                Following code is the original code from Cathy Wu 
+                However, modified to only look at the position of the AV
+                and leading vehicle
+            '''
+            rl_id = self.k.vehicle.get_rl_ids()[0]
+            lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
 
-        # observation = np.array([
-        #     (self.k.vehicle.get_x_by_id(lead_id) -
-        #      self.k.vehicle.get_x_by_id(rl_id)) % self.k.network.length()
-        #     / max_length
-        # ])
+            # normalizers
+            max_speed = 15.
+            if self.env_params.additional_params['ring_length'] is not None:
+                max_length = self.env_params.additional_params['ring_length'][1]
+            else:
+                max_length = self.k.network.length()
 
-        '''
-            SUMO GUI Full Observations
-            Following code uses screenshot from sumo-gui to train the model
-        '''
-        # observation = Image.open(f"./sumo_obs/state_{self.k.simulation.id}.jpeg")
-        # observation = observation.convert("L")
-        # observation = observation.resize((84,84)) # Resizing the image to be smaller
-        # observation = np.asarray(observation) / 255.
+            observation = np.array([
+                (self.k.vehicle.get_x_by_id(lead_id) -
+                 self.k.vehicle.get_x_by_id(rl_id)) % self.k.network.length()
+                / max_length
+            ])
 
+        elif obs_type == "image": 
+            '''
+                SUMO GUI Partial Observations
+                Following code is another method for getting partial observations from the sumo-gui screenshots
+                Uses the 2D position of the RL vehicle for a more accurate screenshot
+            '''
+            sight_radius = self.sim_params.sight_radius
+            rl_id = self.k.vehicle.get_rl_ids()[0]
+            x, y = self.k.vehicle.get_2d_position(rl_id)
+            x, y = self.map_coordinates(x, y)
+            observation = Image.open(f"../../michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+            left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
+            observation = observation.crop((left, upper, right, lower))
+            observation = observation.convert("L")
+            observation = observation.resize((self.img_dim,self.img_dim))
+            observation = np.asarray(observation)
+            observation = self.cv2_clipped_zoom(observation, 1.5)
+            height, width = observation.shape[0:2]
+            sight_radius = height / 2
+            mask = np.zeros((height, width), np.uint8)
+            cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+                       int(sight_radius), (255, 255, 255), thickness=-1)
+            observation = cv2.bitwise_and(observation, observation, mask=mask)
+            # observation = Image.fromarray(observation)
+            # observation.save(f'../../michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+            # observation = np.asarray(observation)
+            observation = observation / 255.
 
-        '''
-            SUMO GUI Partial Observations
-            Following code is another method for getting partial observations from the sumo-gui screenshots
-            Uses the 2D position of the RL vehicle for a more accurate screenshot
-        '''
-        # sight_radius = self.sim_params.sight_radius
-        # rl_id = self.k.vehicle.get_rl_ids()[0]
-        # x, y = self.k.vehicle.get_2d_position(rl_id)
-        # x, y = self.map_coordinates(x, y)
-        # observation = Image.open(f"../../michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
-        # left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
-        # observation = observation.crop((left, upper, right, lower))
-        # observation = observation.convert("L")
-        # observation = observation.resize((self.img_dim,self.img_dim))
-        # observation = np.asarray(observation)
-        # observation = self.cv2_clipped_zoom(observation, 1.5)
-        # height, width = observation.shape[0:2]
-        # sight_radius = height / 2
-        # mask = np.zeros((height, width), np.uint8)
-        # cv2.circle(mask, (int(sight_radius), int(sight_radius)),
-        #            int(sight_radius), (255, 255, 255), thickness=-1)
-        # observation = cv2.bitwise_and(observation, observation, mask=mask)
-        # # observation = Image.fromarray(observation)
-        # # observation.save(f'../../michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
-        # # observation = np.asarray(observation)
-        # observation = observation / 255.
-
-
-        '''
-            All white observations to make sure that learning on images is working and that the policy
-            is not just randomly learning to do the correct behavior.
-        '''
-        # observation = np.zeros((84,84)) / 255.
-        # observation = np.asarray([0])
+        elif obs_type == "blank":
+            '''
+                All white observations to make sure that learning on images is working and that the policy
+                is not just randomly learning to do the correct behavior.
+            '''
+            observation = np.zeros((84,84)) / 255.
+            observation = np.asarray(observation)
 
         
         # time_taken = time.time() - start_time

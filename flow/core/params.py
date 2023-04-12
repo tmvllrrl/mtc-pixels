@@ -591,6 +591,7 @@ class SumoParams(SimParams):
     """
 
     def __init__(self,
+                 additional_params=None,
                  port=None,
                  sim_step=0.1,
                  emission_path=None,
@@ -614,6 +615,9 @@ class SumoParams(SimParams):
         super(SumoParams, self).__init__(
             sim_step, render, restart_instance, emission_path, save_render,
             sight_radius, show_radius, pxpm, force_color_update)
+        
+        self.additional_params = \
+            additional_params if additional_params is not None else {}
         self.port = port
         self.lateral_resolution = lateral_resolution
         self.no_step_log = no_step_log
@@ -624,6 +628,10 @@ class SumoParams(SimParams):
         self.num_clients = num_clients
         self.color_by_speed = color_by_speed
         self.use_ballistic = use_ballistic
+
+    def get_additional_param(self, key):
+        """Return a variable from additional_params."""
+        return self.additional_params[key]
 
 
 class EnvParams:

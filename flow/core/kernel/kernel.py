@@ -66,7 +66,7 @@ class Kernel(object):
         self.kernel_api = None
 
         if simulator == "traci":
-            self.simulation = TraCISimulation(self)
+            self.simulation = TraCISimulation(self, sim_params)
             self.network = TraCIKernelNetwork(self, sim_params)
             self.vehicle = TraCIVehicle(self, sim_params)
             self.traffic_light = TraCITrafficLight(self)

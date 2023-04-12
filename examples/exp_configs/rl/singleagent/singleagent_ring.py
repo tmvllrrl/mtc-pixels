@@ -16,6 +16,12 @@ N_ROLLOUTS = 20
 # number of parallel workers
 N_CPUS = 10
 
+NETWORK = "ring"
+SIM_OBS_TYPE = "image" # Options: "image" or "precise"
+ENV_OBS_TYPE = "image" # Options: "og", "only_pos", "image", "blank"
+EVALUATE = False
+
+
 # We place one autonomous vehicle and 22 human-driven vehicles in the network
 vehicles = VehicleParams()
 vehicles.add(
@@ -50,11 +56,15 @@ flow_params = dict(
     # sumo-related parameters (see flow.core.params.SumoParams)
     sim=SumoParams(
         sim_step=0.1,
-        render=False,
+        render=True,
         save_render=False,
         restart_instance=False,
         sight_radius=42,
         show_radius=False,
+        additional_params={
+            "network": NETWORK,
+            "obs_type": SIM_OBS_TYPE, # Options: "image" or "precise"
+        }
         # emission_path="../../michael_files/emission_collection/"
 
     ),
@@ -68,7 +78,11 @@ flow_params = dict(
             "max_accel": 1,
             "max_decel": 1,
             "ring_length": [220, 270],
+            "obs_type": ENV_OBS_TYPE, # Options: "og", "only_pos", "image", "blank"
+            "evaluate": EVALUATE, # Decides whether to save stats or not
+            "img_dim": 42
         },
+        
     ),
 
     # network-related parameters (see flow.core.params.NetParams and the

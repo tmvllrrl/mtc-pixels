@@ -52,7 +52,7 @@ class TraCISimulation(KernelSimulation):
           vehicle and dividing it by the sim_step term
     """
 
-    def __init__(self, master_kernel):
+    def __init__(self, master_kernel, sim_params):
         """Instantiate the sumo simulator kernel.
 
         Parameters
@@ -68,13 +68,26 @@ class TraCISimulation(KernelSimulation):
         self.emission_path = None
         self.time = 0
         self.stored_data = dict()
-       # self.identifier = "placeholder"
         self.id = str(uuid.uuid4())[:4]
         self.timestep = 0
         self.id_timed = ""
 
         self.offset = 0.
         self.boundary_width = 0.
+
+        self.sim_params = sim_params
+
+        window_sizes = {
+            "ring": (310, 571),
+            "figure_8": (310, 571),
+            "intersection": (810, 1071),
+            "bottleneck": (2410, 1071),
+            "merge": (1610, 871)
+        }
+
+        network = self.sim_params.additional_params['network']
+        network_win_size = window_sizes[network]
+        self.window_size = f"{network_win_size[0]},{network_win_size[1]}"
 
 
     def pass_api(self, kernel_api):
@@ -100,35 +113,33 @@ class TraCISimulation(KernelSimulation):
     def simulation_step(self):
         """See parent class."""
 
-        '''
-            Zoom levels for different networks:
-            REMEMBER TO CHANGE WINDOW SIZE
-            Ring -> 75
-            Figure 8 -> 75
-            Intersection -> 95
-            Bottleneck -> 95
-            Merge -> 85
-        '''
-        zoom_level = 75
+        zoom_levels = {
+            "ring": 75,
+            "figure_8": 75,
+            "intersection": 95,
+            "bottleneck": 95,
+            "merge": 85
+        }
         
         '''
             COMMENT THE FOLLOWING BLOCK OUT FOR ABSOLUTE OBSERVATIONS 
             (Makes the experiments run faster)
         '''
-        # if self.kernel_api.gui.getZoom() != zoom_level: #
-            
-        #     self.kernel_api.gui.setZoom(traci.gui.DEFAULT_VIEW, zoom_level)
-        #     self.kernel_api.gui.setSchema(traci.gui.DEFAULT_VIEW, "faster standard")
+        if self.sim_params.additional_params["obs_type"] == "image":
+            if self.kernel_api.gui.getZoom() != zoom_levels[self.sim_params.additional_params['network']]: #
+                
+                self.kernel_api.gui.setZoom(traci.gui.DEFAULT_VIEW, zoom_levels[self.sim_params.additional_params['network']])
+                self.kernel_api.gui.setSchema(traci.gui.DEFAULT_VIEW, "faster standard")
 
-        #     self.offset = self.kernel_api.gui.getOffset()[0]
+                self.offset = self.kernel_api.gui.getOffset()[0]
 
-        #     boundary = self.kernel_api.gui.getBoundary()
-        #     boundary_min = boundary[0][0]
-        #     boundary_max = boundary[1][0]
+                boundary = self.kernel_api.gui.getBoundary()
+                boundary_min = boundary[0][0]
+                boundary_max = boundary[1][0]
 
-        #     self.boundary_width = abs(boundary_min) + abs(boundary_max)
+                self.boundary_width = abs(boundary_min) + abs(boundary_max)
 
-        # self.kernel_api.gui.screenshot(traci.gui.DEFAULT_VIEW, f"../../michael_files/sumo_obs/state_{self.id}.jpeg")
+            self.kernel_api.gui.screenshot(traci.gui.DEFAULT_VIEW, f"../../michael_files/sumo_obs/state_{self.id}.jpeg")
 
         self.kernel_api.simulationStep()
         
@@ -281,18 +292,7 @@ class TraCISimulation(KernelSimulation):
                 sumo_call.append("true")
 
                 sumo_call.append("--window-size")
-                sumo_call.append("310,571") 
-
-                '''
-                    Window size for different road networks
-                    REMEMBER TO CHANGE ZOOM LEVEL
-
-                    Ring -> 310, 571
-                    Figure 8 -> 310, 571
-                    Intersection -> 810, 1071
-                    Bottleneck -> 2410, 1071
-                    Merge -> 1610, 871
-                '''
+                sumo_call.append(str(self.window_size)) 
 
                 # sumo_call.append("--gui-settings-file")
                 # sumo_call.append("/home/michael/Desktop/flow/viewsettings.xml")
