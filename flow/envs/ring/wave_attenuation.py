@@ -278,8 +278,8 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         return Box(low=-float('inf'), 
                 high=float('inf'),
                 # shape=(84,84,),
-                # shape=(3, ), 
-                shape=(1,), # Removed velocity obs.
+                shape=(3, ), 
+                # shape=(1,), # Removed velocity obs.
                 dtype=np.float32)
 
 
@@ -365,21 +365,21 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
             However, modified to only look at the position of the AV
             and leading vehicle
         '''
-        rl_id = self.k.vehicle.get_rl_ids()[0]
-        lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
+        # rl_id = self.k.vehicle.get_rl_ids()[0]
+        # lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
 
-        # normalizers
-        max_speed = 15.
-        if self.env_params.additional_params['ring_length'] is not None:
-            max_length = self.env_params.additional_params['ring_length'][1]
-        else:
-            max_length = self.k.network.length()
+        # # normalizers
+        # max_speed = 15.
+        # if self.env_params.additional_params['ring_length'] is not None:
+        #     max_length = self.env_params.additional_params['ring_length'][1]
+        # else:
+        #     max_length = self.k.network.length()
 
-        observation = np.array([
-            (self.k.vehicle.get_x_by_id(lead_id) -
-             self.k.vehicle.get_x_by_id(rl_id)) % self.k.network.length()
-            / max_length
-        ])
+        # observation = np.array([
+        #     (self.k.vehicle.get_x_by_id(lead_id) -
+        #      self.k.vehicle.get_x_by_id(rl_id)) % self.k.network.length()
+        #     / max_length
+        # ])
 
         '''
             SUMO GUI Full Observations

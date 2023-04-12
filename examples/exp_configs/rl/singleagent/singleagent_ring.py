@@ -12,9 +12,9 @@ from flow.networks import RingNetwork
 # time horizon of a single rollout
 HORIZON = 3000
 # number of rollouts per training iteration
-N_ROLLOUTS = 5
+N_ROLLOUTS = 20
 # number of parallel workers
-N_CPUS = 5
+N_CPUS = 10
 
 # We place one autonomous vehicle and 22 human-driven vehicles in the network
 vehicles = VehicleParams()
@@ -50,7 +50,7 @@ flow_params = dict(
     # sumo-related parameters (see flow.core.params.SumoParams)
     sim=SumoParams(
         sim_step=0.1,
-        render=True,
+        render=False,
         save_render=False,
         restart_instance=False,
         sight_radius=42,
