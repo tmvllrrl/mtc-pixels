@@ -280,7 +280,7 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         if obs_type == "precise":
             shape = (3,)
         elif obs_type == "image":
-            shape = (84, 84, )
+            shape = (self.img_dim, self.img_dim, )
         elif obs_type == "only_pos":
             shape = (1, )
 
@@ -295,12 +295,13 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
     def get_state(self):
         """See class definition."""
 
-        '''
-            Saves various information about the run to files to be used later on.
-            Some of the files are used for graphs, others calculate some avg. 
-            statistics on the data
-        '''
+        
         if self.env_params.additional_params['evaluate']:
+            '''
+                Saves various information about the run to files to be used later on.
+                Some of the files are used for graphs, others calculate some avg. 
+                statistics on the data
+            '''
             if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
                 
                 if not os.path.exists("../../michael_files/results_lengthX/"):

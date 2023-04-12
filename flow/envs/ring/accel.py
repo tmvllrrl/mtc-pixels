@@ -93,7 +93,7 @@ class AccelEnv(Env):
 
         self.memory = []
 
-        self.img_dim = 42
+        self.img_dim = env_params.additional_params['img_dim']
 
         self.results_dir_name = "trial_results"
 
@@ -112,16 +112,25 @@ class AccelEnv(Env):
     def observation_space(self):
         """See class definition."""
         self.obs_var_labels = ['Velocity', 'Absolute_pos']
-        return Box(
+
+        obs_type = self.env_params.additional_params['obs_type']
+
+        if obs_type == "precise":
+            obs_shape = (3, )
+        elif obs_type == "image":
+            obs_shape = (self.img_dim, self.img_dim, )
+        elif obs_type == "partial":
+            obs_shape = (3, )
+
+        obs_space = Box(
             low=-float('inf'),
             high=float('inf'),
-            shape=(self.img_dim,self.img_dim, ),
-            # shape=(2 * self.initial_vehicles.num_vehicles, ),
-            # shape=(3,), # Partial observations
+            shape=obs_shape,
             dtype=np.float32)
 
+        return obs_space
+
     def _apply_rl_actions(self, rl_actions):
-        # print(rl_actions)
         """See class definition."""
         sorted_rl_ids = [
             veh_id for veh_id in self.sorted_ids
@@ -132,161 +141,167 @@ class AccelEnv(Env):
     def compute_reward(self, rl_actions, **kwargs):
         """See class definition."""
 
-        '''
-            Original reward function within Accel class
-        '''
-        # if self.env_params.evaluate:
-        #     return np.mean(self.k.vehicle.get_speed(self.k.vehicle.get_ids()))
-        # else:
-        #     return rewards.desired_velocity(self, fail=kwargs['fail'])
+        if self.env_params.additional_params['reward'] == "accel":
+            '''
+                Original reward function within Accel class
+            '''
+            if self.env_params.evaluate:
+                return np.mean(self.k.vehicle.get_speed(self.k.vehicle.get_ids()))
+            else:
+                return rewards.desired_velocity(self, fail=kwargs['fail'])
 
-        if rl_actions is None:
-            return 0
+        elif self.env_params.additional_params['reward'] == "wave":
+            '''
+                Reward function used in the Wave Attenuation class
+            '''
+            if rl_actions is None:
+                return 0
 
-        vel = np.array([
-            self.k.vehicle.get_speed(veh_id)
-            for veh_id in self.k.vehicle.get_ids()
-        ])
+            vel = np.array([
+                self.k.vehicle.get_speed(veh_id)
+                for veh_id in self.k.vehicle.get_ids()
+            ])
 
-        if any(vel < -100) or kwargs['fail']:
-            return 0.
+            if any(vel < -100) or kwargs['fail']:
+                return 0.
 
-        # reward average velocity
-        eta_2 = 4.
-        reward = eta_2 * np.mean(vel) / 20
+            # reward average velocity
+            eta_2 = 4.
+            reward = eta_2 * np.mean(vel) / 20
 
-        # punish accelerations (should lead to reduced stop-and-go waves)
-        eta = 3  # 0.25
-        mean_actions = np.mean(np.abs(np.array(rl_actions)))
-        accel_threshold = 0
+            # punish accelerations (should lead to reduced stop-and-go waves)
+            eta = 4  # 0.25
+            mean_actions = np.mean(np.abs(np.array(rl_actions)))
+            accel_threshold = 0
 
-        if mean_actions > accel_threshold:
-            reward += eta * (accel_threshold - mean_actions)
+            if mean_actions > accel_threshold:
+                reward += eta * (accel_threshold - mean_actions)
 
-        return float(reward)
+            return float(reward)
 
     def get_state(self):
         """See class definition."""
 
-        
-        # Save the avg and min velocity collectors to a file
-        # if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
-             
-        #     if not os.path.exists(f"../../michael_files/{self.results_dir_name}/"):
-        #        os.mkdir(f"./michael_files/{self.results_dir_name}/")
-         
-        #     with open(f"../../michael_files/{self.results_dir_name}/avg_velocity.txt", "a") as f:
-        #         np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
-        #         f.write("\n")
+        if self.env_params.additional_params['evaluate']:
+            '''
+                Saves various information about the run to files to be used later on.
+                Some of the files are used for graphs, others calculate some avg. 
+                statistics on the data
+            '''
+            if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
+                
+                if not os.path.exists(f"../../michael_files/{self.results_dir_name}/"):
+                   os.mkdir(f"./michael_files/{self.results_dir_name}/")
             
-        #     with open(f"../../michael_files/{self.results_dir_name}/min_velocity.txt", "a") as f:
-        #         np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
-        #         f.write("\n")
+                with open(f"../../michael_files/{self.results_dir_name}/avg_velocity.txt", "a") as f:
+                    np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
+                    f.write("\n")
+                
+                with open(f"../../michael_files/{self.results_dir_name}/min_velocity.txt", "a") as f:
+                    np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
+                    f.write("\n")
+                
+                with open(f"../../michael_files/{self.results_dir_name}/rl_velocity.txt", "a") as f:
+                    np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
+                    f.write("\n")
             
-        #     with open(f"../../michael_files/{self.results_dir_name}/rl_velocity.txt", "a") as f:
-        #         np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
-        #         f.write("\n")
-        
-        #     with open(f"../../michael_files/{self.results_dir_name}/rl_accel_realized.txt", "a") as f:
-        #         np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
-        #         f.write("\n")
+                with open(f"../../michael_files/{self.results_dir_name}/rl_accel_realized.txt", "a") as f:
+                    np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
+                    f.write("\n")
 
 
-        # speed = np.asarray([self.k.vehicle.get_speed(veh_id) for veh_id in self.k.vehicle.get_ids()])
-        # self.avg_velocity_collector.append(np.mean(speed))
-        # self.min_velocity_collector.append(np.min(speed))
+            speed = np.asarray([self.k.vehicle.get_speed(veh_id) for veh_id in self.k.vehicle.get_ids()])
+            self.avg_velocity_collector.append(np.mean(speed))
+            self.min_velocity_collector.append(np.min(speed))
 
-        # rl_id = self.k.vehicle.get_rl_ids()[0]
-        # self.rl_velocity_collector.append(self.k.vehicle.get_speed(rl_id))
-        # self.rl_accel_realized_collector.append(self.k.vehicle.get_realized_accel(rl_id))
+            rl_id = self.k.vehicle.get_rl_ids()[0]
+            self.rl_velocity_collector.append(self.k.vehicle.get_speed(rl_id))
+            self.rl_accel_realized_collector.append(self.k.vehicle.get_realized_accel(rl_id))
 
+        obs_type = self.env_params.additional_params['obs_type']
 
-        '''
-            Following code is the original code from Cathy Wu 
-        '''
-        # speed = [self.k.vehicle.get_speed(veh_id) / self.k.network.max_speed()
-        #          for veh_id in self.sorted_ids]
-        # pos = [self.k.vehicle.get_x_by_id(veh_id) / self.k.network.length()
-        #        for veh_id in self.sorted_ids]
+        if obs_type == "precise":
+            '''
+                Following code is the original code from Cathy Wu 
+            '''
+            speed = [self.k.vehicle.get_speed(veh_id) / self.k.network.max_speed()
+                     for veh_id in self.sorted_ids]
+            pos = [self.k.vehicle.get_x_by_id(veh_id) / self.k.network.length()
+                   for veh_id in self.sorted_ids]
 
-        # observation = np.array(speed + pos)
+            observation = np.array(speed + pos)
 
-        '''
-            Following code is from Wave Attn and is partial obs
-        '''
-        # rl_id = self.k.vehicle.get_rl_ids()[0]
-        # lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
+        elif obs_type == "partial":
+            '''
+                Following code is from Wave Attn and is partial obs
+            '''
+            rl_id = self.k.vehicle.get_rl_ids()[0]
+            lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
 
-        # # normalizers
-        # max_speed = 15.
-        # if self.env_params.additional_params['radius_ring'] is not None:
-        #     max_length = self.env_params.additional_params['radius_ring'][1]
-        # else:
-        #     max_length = self.k.network.length()
+            # normalizers
+            max_speed = 15.
+            if self.env_params.additional_params['radius_ring'] is not None:
+                max_length = self.env_params.additional_params['radius_ring'][1]
+            else:
+                max_length = self.k.network.length()
 
-        # observation = np.array([
-        #     self.k.vehicle.get_speed(rl_id) / max_speed,
-        #     (self.k.vehicle.get_speed(lead_id) -
-        #      self.k.vehicle.get_speed(rl_id)) / max_speed,
-        #     (self.k.vehicle.get_x_by_id(lead_id) -
-        #      self.k.vehicle.get_x_by_id(rl_id)) % self.k.network.length()
-        #     / max_length
-        # ])
+            observation = np.array([
+                self.k.vehicle.get_speed(rl_id) / max_speed,
+                (self.k.vehicle.get_speed(lead_id) -
+                 self.k.vehicle.get_speed(rl_id)) / max_speed,
+                (self.k.vehicle.get_x_by_id(lead_id) -
+                 self.k.vehicle.get_x_by_id(rl_id)) % self.k.network.length()
+                / max_length
+            ])
 
-        '''
-            SUMO GUI Full Observations
-            Following code uses screenshot from sumo-gui to train the model
-        '''
-        # observation = Image.open(f"./sumo_obs/state_{self.k.simulation.id}.jpeg")
-        # observation = observation.convert("L")
-        # observation = observation.resize((84,84)) # Resizing the image to be smaller
-        # observation = np.asarray(observation) / 255.
+        elif obs_type == "image":
+            '''
+                SUMO GUI Partial Observations
+                Following code is another method for getting partial observations from the sumo-gui screenshots
+                Uses the 2D position of the RL vehicle for a more accurate screenshot
+            '''
+            sight_radius = self.sim_params.sight_radius
+            rl_id = self.k.vehicle.get_rl_ids()[0]
+            x, y = self.k.vehicle.get_2d_position(rl_id)
+            x, y = self.map_coordinates(x, y)
+            observation = Image.open(f"../../michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+            left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
+            observation = observation.crop((left, upper, right, lower))
+            observation = observation.convert("L") # Grayscale the image
+            observation = observation.resize((self.img_dim,self.img_dim)) # Resize to fit the convolution layers
+            observation = np.asarray(observation)
+            observation = self.cv2_clipped_zoom(observation, 1.5) # Zoom in on the image
+            height, width = observation.shape[0:2]
+            sight_radius = height / 2
+            mask = np.zeros((height, width), np.uint8)
+            cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+                    int(sight_radius), (255, 255, 255), thickness=-1)
+            observation = cv2.bitwise_and(observation, observation, mask=mask)
+            # observation = Image.fromarray(observation)
+            # observation.save(f'../../michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+            # observation = np.asarray(observation)
+            observation = observation / 255.
 
-        '''
-            SUMO GUI Partial Observations
-            Following code is another method for getting partial observations from the sumo-gui screenshots
-            Uses the 2D position of the RL vehicle for a more accurate screenshot
-        '''
-        sight_radius = self.sim_params.sight_radius
-        rl_id = self.k.vehicle.get_rl_ids()[0]
-        x, y = self.k.vehicle.get_2d_position(rl_id)
-        x, y = self.map_coordinates(x, y)
-        observation = Image.open(f"../../michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
-        left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
-        observation = observation.crop((left, upper, right, lower))
-        observation = observation.convert("L") # Grayscale the image
-        observation = observation.resize((self.img_dim,self.img_dim)) # Resize to fit the convolution layers
-        observation = np.asarray(observation)
-        observation = self.cv2_clipped_zoom(observation, 1.5) # Zoom in on the image
-        height, width = observation.shape[0:2]
-        sight_radius = height / 2
-        mask = np.zeros((height, width), np.uint8)
-        cv2.circle(mask, (int(sight_radius), int(sight_radius)),
-                   int(sight_radius), (255, 255, 255), thickness=-1)
-        observation = cv2.bitwise_and(observation, observation, mask=mask)
-        # observation = Image.fromarray(observation)
-        # observation.save(f'../../michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
-        # observation = np.asarray(observation)
-        observation = observation / 255.
+            if self.env_params.additional_params['memory']:
+                if self.step_counter == 0:
+                    for i in range(2):
+                        self.memory.append(observation)
+                else:
+                    self.memory.pop(0)
+                    self.memory.insert(len(self.memory), observation)
 
+        elif obs_type == "blank":
+            '''
+                All white observations to make sure that learning on images is working and that the policy
+                is not just randomly learning to do the correct behavior.
+            '''
+            observation = np.zeros((84,84)) / 255.
+            
 
-        '''
-            All white observations to make sure that learning on images is working and that the policy
-            is not just randomly learning to do the correct behavior.
-        '''
-        # observation = np.zeros((84,84)) / 255.
-
-        # if self.step_counter == 0:
-        #     for i in range(2):
-        #         self.memory.append(observation)
-        # else:
-        # self.memory.pop(0)
-        # self.memory.insert(len(self.memory), observation)
-
-        # return np.moveaxis(np.asarray(self.memory),0,-1)
-
-
-        return observation
+        if self.env_params.additional_params['memory']:
+            return np.moveaxis(np.asarray(self.memory),0,-1)
+        else:
+            return observation
 
     def additional_command(self):
         """See parent class.
