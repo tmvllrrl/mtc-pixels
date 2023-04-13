@@ -117,7 +117,7 @@ class AccelEnv(Env):
 
         if obs_type == "precise":
             obs_shape = (2 * self.initial_vehicles.num_vehicles, )
-        elif obs_type == "image":
+        elif obs_type in ["image", "blank"]:
             obs_shape = (self.img_dim, self.img_dim, )
         elif obs_type == "partial":
             obs_shape = (3, )
