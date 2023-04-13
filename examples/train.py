@@ -155,7 +155,7 @@ def setup_exps_rllib(flow_params,
     #     [32, [4, 4], 2],
     #     [256, [11, 11], 1],
     # ]})
-    config["model"].update({"fcnet_hiddens":  [3,3]})
+    # config["model"].update({"fcnet_hiddens":  [3,3]})
     # print(f"model config: {config['model']}")
     config["use_gae"] = True
     config["lambda"] = 0.97
