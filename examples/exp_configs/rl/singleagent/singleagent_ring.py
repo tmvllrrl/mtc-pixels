@@ -18,8 +18,8 @@ N_CPUS = 10
 
 OBS_TYPE = "chatgpt" # Options: ["precise", "only_pos", "chatgpt", "image", "blank"]
 REWARD_FUNC = "chatgpt" # Options: ["wave", "chatgpt"]
-EVALUATE = True # Decides whether to save stats or not. This value needs to be changed in run's params.json
-CIRCLE_MASK = True # Decides whether to include a circle mask or not
+EVALUATE = False # Decides whether to save stats or not. This value needs to be changed in run's params.json
+CIRCLE_MASK = True # Decides whether to include a circle mask or not on images
 
 
 # We place one autonomous vehicle and 22 human-driven vehicles in the network
