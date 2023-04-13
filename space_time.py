@@ -1,5 +1,5 @@
 # Space time plot (stop and take control) -- reference?
-def plot_std(pos_vel_collector, n_cars = 22, horizon = 5010, warmup = 2500):
+def plot_std(pos_vel_collector, n_cars = 22, horizon = 5010, warmup = 2500, results_name=None):
     """
     TODO: Levels = None, write levels at end of warmup and end of trial to a file 
     This solution is still quick and dirty
@@ -21,10 +21,10 @@ def plot_std(pos_vel_collector, n_cars = 22, horizon = 5010, warmup = 2500):
     N_CARS = n_cars
     WARMUP = int(warmup / 10) 
     HORIZON = int(horizon / 10)
-    DIR = 'space_time_plots' #helper
+    DIR = f"../../michael_files/{results_name}/"
 
     if not os.path.exists(DIR):
-        os.makedirs(DIR )
+        os.makedirs(DIR)
     path = f"./{DIR}/" + name + ".png"
 
     cdict = {

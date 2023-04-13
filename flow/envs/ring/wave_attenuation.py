@@ -323,6 +323,7 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
 
         
         if self.env_params.additional_params['evaluate']:
+            results_name = "results"
             '''
                 Saves various information about the run to files to be used later on.
                 Some of the files are used for graphs, others calculate some avg. 
@@ -330,31 +331,31 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
             '''
             if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
                 
-                if not os.path.exists("../../michael_files/results_lengthX/"):
-                    os.mkdir("../../michael_files/results_lengthX/")
+                if not os.path.exists(f"../../michael_files/{results_name}/"):
+                    os.mkdir(f"../../michael_files/{results_name}/")
             
-                with open(f"../../michael_files/results_lengthX/avg_velocity.txt", "a") as f:
+                with open(f"../../michael_files/{results_name}/avg_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
                 
-                with open(f"../../michael_files/results_lengthX/min_velocity.txt", "a") as f:
+                with open(f"../../michael_files/{results_name}/min_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
                 
-                with open(f"../../michael_files/results_lengthX/rl_velocity.txt", "a") as f:
+                with open(f"../../michael_files/{results_name}/rl_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
             
-                with open(f"../../michael_files/results_lengthX/rl_accel_realized.txt", "a") as f:
+                with open(f"../../michael_files/{results_name}/rl_accel_realized.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
                     f.write("\n")
 
                 self.rl_action_collector = np.asarray(self.rl_action_collector)
-                np.savez("../../michael_files/rl_action_collector.npz", rl_actions=self.rl_action_collector)
+                np.savez("../../michael_files/{results_name}/rl_action_collector.npz", rl_actions=self.rl_action_collector)
 
                 self.space_time_collector = np.asarray(self.space_time_collector)
-                np.savez("../../michael_files/space_time_collector.npz", space_time_collector=self.space_time_collector)
-                plot_std(self.space_time_collector, horizon=3000, warmup=3000)
+                np.savez("../../michael_files/{results_name}/space_time_collector.npz", space_time_collector=self.space_time_collector)
+                plot_std(self.space_time_collector, horizon=3000, warmup=3000, results_name=results_name)
 
             speed = np.asarray([self.k.vehicle.get_speed(veh_id) for veh_id in self.k.vehicle.get_ids()])
             self.avg_velocity_collector.append(np.mean(speed))
