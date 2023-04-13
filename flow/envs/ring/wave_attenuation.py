@@ -162,29 +162,6 @@ class WaveAttenuationEnv(Env):
                 reward += eta * (accel_threshold - mean_actions)
 
             return float(reward)
-        
-        elif self.env_params.additional_params['reward'] == "chatgpt":
-            
-            rl_id = self.k.vehicle.get_rl_ids()[0]
-            lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
-            follow_id = self.k.vehicle.get_follower(rl_id) or rl_id
-            lead_lead_id = self.k.vehicle.get_leader(lead_id) or lead_id
-            follow_follow_id = self.k.vehicle.get_follower(follow_id) or follow_id
-
-            vicinity_ids = [rl_id, lead_id, follow_id, lead_lead_id, follow_follow_id]
-
-            vel = np.array([
-                self.k.vehicle.get_speed(veh_id) for veh_id in vicinity_ids
-            ])
-            v_mean = np.mean(vel)
-
-            v_std = np.std(vel)
-
-            s = self.k.vehicle.get_speed(rl_id) - self.k.vehicle.get_speed(follow_id)
-
-            reward = v_mean - v_std - s
-
-            return reward
 
     def get_state(self):
         """See class definition."""
@@ -296,6 +273,68 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
 
     """
 
+    def compute_reward(self, rl_actions, **kwargs):
+        """See class definition."""
+        if self.env_params.additional_params['reward'] == "wave":
+            # in the warmup steps
+            if rl_actions is None:
+                return 0
+
+            vel = np.array([
+                self.k.vehicle.get_speed(veh_id)
+                for veh_id in self.k.vehicle.get_ids()
+            ])
+
+            if any(vel < -100) or kwargs['fail']:
+                return 0.
+
+            # reward average velocity
+            eta_2 = 4.
+            reward = eta_2 * np.mean(vel) / 20
+
+            # punish accelerations (should lead to reduced stop-and-go waves)
+            eta = 4  # 0.25
+            mean_actions = np.mean(np.abs(np.array(rl_actions)))
+            accel_threshold = 0
+
+            if mean_actions > accel_threshold:
+                reward += eta * (accel_threshold - mean_actions)
+
+            return float(reward)
+        
+        elif self.env_params.additional_params['reward'] == "chatgpt":
+            
+            if rl_actions is None:
+                return 0
+            
+            rl_id = self.k.vehicle.get_rl_ids()[0]
+            lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
+
+            w1 = 0.5
+            w2 = 0.3
+            w3 = 1.0
+
+            avg_speed = np.mean([self.k.vehicle.get_speed(veh_id) for veh_id in self.k.vehicle.get_ids()])
+            max_speed = self.net_params.additional_params['speed_limit']
+
+            agent_acceleration = np.mean(np.abs(np.array(rl_actions)))
+
+            mid_point = self.net_params.additional_params['length'] / 2.
+            rl_x = self.k.vehicle.get_x_by_id(rl_id)
+            lead_x = self.k.vehicle.get_x_by_id(lead_id)
+
+            if rl_x > mid_point and lead_x < mid_point:
+                # reset occurred
+                lead_gap = abs((self.net_params.additional_params['length'] - rl_x) + lead_x)
+            else:
+                lead_gap = abs(lead_x - rl_x)
+            
+            collision_penalty = 1 if lead_gap < 12. else 0
+
+            reward = w1 * (avg_speed/max_speed) - w2 * abs(agent_acceleration) - w3 * collision_penalty
+
+            return float(reward)
+
     @property
     def observation_space(self):
         """See class definition."""
@@ -308,7 +347,7 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         elif obs_type == "only_pos":
             obs_shape = (1, )
         elif obs_type == "chatgpt":
-            obs_shape = (4, )
+            obs_shape = (8, )
 
         obs_space = Box(low=-float('inf'), 
                 high=float('inf'),
@@ -429,11 +468,21 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
             lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
             follow_id = self.k.vehicle.get_follower(rl_id) or rl_id
 
+            speed_dif = self.k.vehicle.get_speed(rl_id) - self.k.vehicle.get_speed(lead_id)
+            speed_dif += self.k.vehicle.get_speed(rl_id) - self.k.vehicle.get_speed(follow_id)
+
+            dist_dif = self.k.vehicle.get_x_by_id(rl_id) - self.k.vehicle.get_x_by_id(lead_id)
+            dist_dif += self.k.vehicle.get_x_by_id(rl_id) - self.k.vehicle.get_x_by_id(follow_id)
+
             observation = np.array([
-                self.k.vehicle.get_x_by_id(rl_id),
-                self.k.vehicle.get_speed(rl_id),
-                self.k.vehicle.get_x_by_id(rl_id) - self.k.vehicle.get_x_by_id(lead_id),
-                self.k.vehicle.get_x_by_id(rl_id) - self.k.vehicle.get_x_by_id(follow_id),
+                self.k.vehicle.get_speed(rl_id), # Agent's speed
+                self.k.vehicle.get_x_by_id(rl_id), # Agent's position
+                speed_dif, # speed difference between vehicles behind and ahead
+                self.k.vehicle.get_x_by_id(lead_id), # Position of lead veh
+                self.k.vehicle.get_x_by_id(follow_id), # Position of follow veh
+                dist_dif, # Gap distance
+                self.net_params.additional_params['speed_limit'], # Speed limit
+                2, # Visibility range
             ])
 
         elif obs_type == "image": 
