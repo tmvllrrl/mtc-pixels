@@ -101,7 +101,6 @@ class MergePOEnv(Env):
         self.rl_velocity_collector = []
         self.rl_accel_realized_collector = []
 
-        self.results_dir_name = "trial_results"
 
         super().__init__(env_params, sim_params, network, simulator)
 
@@ -145,24 +144,26 @@ class MergePOEnv(Env):
         """See class definition."""
 
         if self.env_params.additional_params['evaluate']:
+            results_dir = "merge_results"
+
             if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
                 
-                if not os.path.exists(f"../../michael_files/{self.results_dir_name}/"):
-                    os.mkdir(f"./michael_files/{self.results_dir_name}/")
+                if not os.path.exists(f"../../michael_files/{results_dir}/"):
+                    os.mkdir(f"./michael_files/{results_dir}/")
             
-                with open(f"../../michael_files/{self.results_dir_name}/avg_velocity.txt", "a") as f:
+                with open(f"../../michael_files/{results_dir}/avg_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
                 
-                with open(f"../../michael_files/{self.results_dir_name}/min_velocity.txt", "a") as f:
+                with open(f"../../michael_files/{results_dir}/min_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
                 
-                with open(f"../../michael_files/{self.results_dir_name}/rl_velocity.txt", "a") as f:
+                with open(f"../../michael_files/{results_dir}/rl_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
             
-                with open(f"../../michael_files/{self.results_dir_name}/rl_accel_realized.txt", "a") as f:
+                with open(f"../../michael_files/{results_dir}/rl_accel_realized.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
                     f.write("\n")
 

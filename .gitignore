@@ -111,6 +111,7 @@ flow.ang
 *.ang.old
 *.sang
 
+# Added by Michael Villarreal
 sumo_obs/
 
 michael_files/sumo_obs/
@@ -118,3 +119,7 @@ michael_files/trial_results/
 michael_files/results_collection/
 michael_files/results/
 michael_files/results_lengthX/
+michael_files/notebook_scripts/
+michael_files/ring_results/
+michael_files/figure8_results/
+michael_files/merge_results/
