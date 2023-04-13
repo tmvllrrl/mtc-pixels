@@ -136,31 +136,55 @@ class WaveAttenuationEnv(Env):
 
     def compute_reward(self, rl_actions, **kwargs):
         """See class definition."""
-        # in the warmup steps
-        if rl_actions is None:
-            return 0
+        if self.env_params.additional_params['reward'] == "wave":
+            # in the warmup steps
+            if rl_actions is None:
+                return 0
 
-        vel = np.array([
-            self.k.vehicle.get_speed(veh_id)
-            for veh_id in self.k.vehicle.get_ids()
-        ])
+            vel = np.array([
+                self.k.vehicle.get_speed(veh_id)
+                for veh_id in self.k.vehicle.get_ids()
+            ])
 
-        if any(vel < -100) or kwargs['fail']:
-            return 0.
+            if any(vel < -100) or kwargs['fail']:
+                return 0.
 
-        # reward average velocity
-        eta_2 = 4.
-        reward = eta_2 * np.mean(vel) / 20
+            # reward average velocity
+            eta_2 = 4.
+            reward = eta_2 * np.mean(vel) / 20
 
-        # punish accelerations (should lead to reduced stop-and-go waves)
-        eta = 4  # 0.25
-        mean_actions = np.mean(np.abs(np.array(rl_actions)))
-        accel_threshold = 0
+            # punish accelerations (should lead to reduced stop-and-go waves)
+            eta = 4  # 0.25
+            mean_actions = np.mean(np.abs(np.array(rl_actions)))
+            accel_threshold = 0
 
-        if mean_actions > accel_threshold:
-            reward += eta * (accel_threshold - mean_actions)
+            if mean_actions > accel_threshold:
+                reward += eta * (accel_threshold - mean_actions)
 
-        return float(reward)
+            return float(reward)
+        
+        elif self.env_params.additional_params['reward'] == "chatgpt":
+            
+            rl_id = self.k.vehicle.get_rl_ids()[0]
+            lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
+            follow_id = self.k.vehicle.get_follower(rl_id) or rl_id
+            lead_lead_id = self.k.vehicle.get_leader(lead_id) or lead_id
+            follow_follow_id = self.k.vehicle.get_follower(follow_id) or follow_id
+
+            vicinity_ids = [rl_id, lead_id, follow_id, lead_lead_id, follow_follow_id]
+
+            vel = np.array([
+                self.k.vehicle.get_speed(veh_id) for veh_id in vicinity_ids
+            ])
+            v_mean = np.mean(vel)
+
+            v_std = np.std(vel)
+
+            s = self.k.vehicle.get_speed(rl_id) - self.k.vehicle.get_speed(follow_id)
+
+            reward = v_mean - v_std - s
+
+            return reward
 
     def get_state(self):
         """See class definition."""
@@ -278,15 +302,17 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         obs_type = self.env_params.additional_params['obs_type']
 
         if obs_type == "precise":
-            shape = (3,)
-        elif obs_type == "image" or "blank":
-            shape = (self.img_dim, self.img_dim, )
+            obs_shape = (3,)
+        elif obs_type in ["image", "blank"]:
+            obs_shape = (self.img_dim, self.img_dim, )
         elif obs_type == "only_pos":
-            shape = (1, )
+            obs_shape = (1, )
+        elif obs_type == "chatgpt":
+            obs_shape = (4, )
 
         obs_space = Box(low=-float('inf'), 
                 high=float('inf'),
-                shape=shape,
+                shape=obs_shape,
                 dtype=np.float32)
 
         return obs_space
@@ -328,7 +354,7 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
 
                 self.space_time_collector = np.asarray(self.space_time_collector)
                 np.savez("../../michael_files/space_time_collector.npz", space_time_collector=self.space_time_collector)
-                plot_std(self.space_time_collector, horizon=5000, warmup=3000)
+                plot_std(self.space_time_collector, horizon=3000, warmup=3000)
 
             speed = np.asarray([self.k.vehicle.get_speed(veh_id) for veh_id in self.k.vehicle.get_ids()])
             self.avg_velocity_collector.append(np.mean(speed))
@@ -394,6 +420,19 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
                 (self.k.vehicle.get_x_by_id(lead_id) -
                  self.k.vehicle.get_x_by_id(rl_id)) % self.k.network.length()
                 / max_length
+            ])
+
+        elif obs_type == "chatgpt":
+
+            rl_id = self.k.vehicle.get_rl_ids()[0]
+            lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
+            follow_id = self.k.vehicle.get_follower(rl_id) or rl_id
+
+            observation = np.array([
+                self.k.vehicle.get_x_by_id(rl_id),
+                self.k.vehicle.get_speed(rl_id),
+                self.k.vehicle.get_x_by_id(rl_id) - self.k.vehicle.get_x_by_id(lead_id),
+                self.k.vehicle.get_x_by_id(rl_id) - self.k.vehicle.get_x_by_id(follow_id),
             ])
 
         elif obs_type == "image": 

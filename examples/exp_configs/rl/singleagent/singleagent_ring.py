@@ -16,8 +16,9 @@ N_ROLLOUTS = 20
 # number of parallel workers
 N_CPUS = 10
 
-OBS_TYPE = "precise" # Options: ["precise", "only_pos", "image", "blank"]
-EVALUATE = False # Decides whether to save stats or not
+OBS_TYPE = "chatgpt" # Options: ["precise", "only_pos", "chatgpt", "image", "blank"]
+REWARD_FUNC = "chatgpt" # Options: ["wave", "chatgpt"]
+EVALUATE = True # Decides whether to save stats or not. This value needs to be changed in run's params.json
 CIRCLE_MASK = True # Decides whether to include a circle mask or not
 
 
@@ -78,6 +79,7 @@ flow_params = dict(
             "max_decel": 1,
             "ring_length": [220, 270],
             "obs_type": OBS_TYPE, 
+            "reward": REWARD_FUNC,
             "evaluate": EVALUATE, 
             "circle_mask": CIRCLE_MASK,
             "img_dim": 84
