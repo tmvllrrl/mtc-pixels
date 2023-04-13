@@ -126,6 +126,10 @@ class TraCISimulation(KernelSimulation):
             (Makes the experiments run faster)
         '''
         if self.sim_params.additional_params["obs_type"] in ["image", "blank"]:
+            img_save_path = f"../../michael_files/sumo_obs/"
+            if not os.path.exists(img_save_path):
+                os.mkdir(img_save_path)
+
             if self.kernel_api.gui.getZoom() != zoom_levels[self.sim_params.additional_params['network']]: #
                 
                 self.kernel_api.gui.setZoom(traci.gui.DEFAULT_VIEW, zoom_levels[self.sim_params.additional_params['network']])

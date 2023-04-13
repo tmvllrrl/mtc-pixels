@@ -323,7 +323,7 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
 
         
         if self.env_params.additional_params['evaluate']:
-            results_name = "results"
+            results_name = "ring_results"
             '''
                 Saves various information about the run to files to be used later on.
                 Some of the files are used for graphs, others calculate some avg. 
@@ -351,10 +351,10 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
                     f.write("\n")
 
                 self.rl_action_collector = np.asarray(self.rl_action_collector)
-                np.savez("../../michael_files/{results_name}/rl_action_collector.npz", rl_actions=self.rl_action_collector)
+                np.savez(f"../../michael_files/{results_name}/rl_action_collector.npz", rl_actions=self.rl_action_collector)
 
                 self.space_time_collector = np.asarray(self.space_time_collector)
-                np.savez("../../michael_files/{results_name}/space_time_collector.npz", space_time_collector=self.space_time_collector)
+                np.savez(f"../../michael_files/{results_name}/space_time_collector.npz", space_time_collector=self.space_time_collector)
                 plot_std(self.space_time_collector, horizon=3000, warmup=3000, results_name=results_name)
 
             speed = np.asarray([self.k.vehicle.get_speed(veh_id) for veh_id in self.k.vehicle.get_ids()])
