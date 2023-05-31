@@ -150,12 +150,12 @@ def setup_exps_rllib(flow_params,
     config["train_batch_size"] = horizon * n_rollouts
     # config["train_batch_size"] = 256
     config["gamma"] = 0.999  # discount rate
-    # config["model"].update({"conv_filters":  [
-    #     [16, [8, 8], 4],
-    #     [32, [4, 4], 2],
-    #     [256, [11, 11], 1],
-    # ]})
-    # config["model"].update({"fcnet_hiddens":  [3,3]})
+    config["model"].update({"conv_filters":  [
+        [16, [8, 8], 4],
+        [32, [4, 4], 2],
+        [256, [11, 11], 1],
+    ]})
+    config["model"].update({"fcnet_hiddens":  [16,16]})
     # print(f"model config: {config['model']}")
     config["use_gae"] = True
     config["lambda"] = 0.97
@@ -218,6 +218,9 @@ def train_rllib(submodule, flags):
     alg_run, gym_name, config = setup_exps_rllib(
         flow_params, n_cpus, n_rollouts,
         policy_graphs, policy_mapping_fn, policies_to_train)
+    
+    def trial_name(trial):
+        return "flow-image"
 
     ray.init(num_cpus=n_cpus+1, num_gpus=n_cpus+1, object_store_memory=15000 * 1024 * 1024)
     exp_config = {
@@ -232,6 +235,7 @@ def train_rllib(submodule, flags):
         "stop": {
             "training_iteration": flags.num_steps,
         },
+        "trial_name_creator": trial_name
     }
     
 

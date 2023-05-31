@@ -8,11 +8,11 @@ from ray.tune import run_experiments
 
 from flow.core.experiment import Experiment
 
-from examples.exp_configs.rl.singleagent.singleagent_figure_eight import flow_params as singleagent_figure_eight
+from examples.exp_configs.rl.singleagent.figure_eight import flow_params as singleagent_figure_eight
 from examples.exp_configs.rl.singleagent.singleagent_traffic_light_grid import \
     flow_params as singleagent_traffic_light_grid
 from examples.exp_configs.rl.singleagent.singleagent_merge import flow_params as singleagent_merge
-from examples.exp_configs.rl.singleagent.singleagent_ring import flow_params as singleagent_ring
+from examples.exp_configs.rl.singleagent.ring import flow_params as singleagent_ring
 from examples.exp_configs.rl.singleagent.singleagent_bottleneck import flow_params as singleagent_bottleneck
 
 from examples.exp_configs.rl.multiagent.adversarial_figure_eight import flow_params as adversarial_figure_eight

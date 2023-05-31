@@ -236,7 +236,7 @@ class MergePOEnv(Env):
                     continue
                 x, y = self.map_coordinates(x, y)
                 
-                bev = Image.open(f"../../michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+                bev = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
                 left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
                 bev = bev.crop((left, upper, right, lower))
                 bev = bev.convert("L").resize((self.img_dim,self.img_dim))

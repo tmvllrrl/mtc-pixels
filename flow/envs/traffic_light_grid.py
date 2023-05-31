@@ -833,7 +833,7 @@ class TrafficLightGridPOEnv(TrafficLightGridEnv):
             sight_radius = self.sim_params.sight_radius
             x, y = 400, 373 # These coordinates are for a single intersection
             
-            observation = Image.open(f"../../michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+            observation = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
             left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
             observation = observation.crop((left, upper, right, lower))
             observation = observation.convert("L").resize((self.img_dim,self.img_dim))

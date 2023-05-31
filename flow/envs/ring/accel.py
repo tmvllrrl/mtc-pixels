@@ -191,22 +191,22 @@ class AccelEnv(Env):
             '''
             if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
                 
-                if not os.path.exists(f"../../michael_files/{results_dir}/"):
+                if not os.path.exists(f"./michael_files/{results_dir}/"):
                    os.mkdir(f"./michael_files/{results_dir}/")
             
-                with open(f"../../michael_files/{results_dir}/avg_velocity.txt", "a") as f:
+                with open(f"./michael_files/{results_dir}/avg_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
                 
-                with open(f"../../michael_files/{results_dir}/min_velocity.txt", "a") as f:
+                with open(f"./michael_files/{results_dir}/min_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
                 
-                with open(f"../../michael_files/{results_dir}/rl_velocity.txt", "a") as f:
+                with open(f"./michael_files/{results_dir}/rl_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
             
-                with open(f"../../michael_files/{results_dir}/rl_accel_realized.txt", "a") as f:
+                with open(f"./michael_files/{results_dir}/rl_accel_realized.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
                     f.write("\n")
 
@@ -265,7 +265,7 @@ class AccelEnv(Env):
             rl_id = self.k.vehicle.get_rl_ids()[0]
             x, y = self.k.vehicle.get_2d_position(rl_id)
             x, y = self.map_coordinates(x, y)
-            observation = Image.open(f"../../michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+            observation = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
             left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
             observation = observation.crop((left, upper, right, lower))
             observation = observation.convert("L").resize((self.img_dim, self.img_dim))

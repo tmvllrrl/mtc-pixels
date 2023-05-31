@@ -16,13 +16,13 @@ from flow.core.params import VehicleParams
 from flow.controllers import RLController, ContinuousRouter
 
 # time horizon of a single rollout
-HORIZON = 800
+HORIZON = 1000
 
-N_CPUS = 5
+N_CPUS = 10
 # number of rollouts per training iteration
 N_ROLLOUTS = 10
 
-OBS_TYPE = "precise" # Options: ["precise", "image"]
+OBS_TYPE = "image" # Options: ["precise", "image"]
 CIRCLE_MASK = True
 
 SCALING = 1
@@ -60,7 +60,7 @@ num_observed_segments = [("1", 1), ("2", 3), ("3", 3), ("4", 3), ("5", 1)]
 
 
 # flow rate
-flow_rate = 2500 * SCALING
+flow_rate = 2300 * SCALING
 
 # percentage of flow coming out of each lane
 inflow = InFlows()
@@ -94,7 +94,7 @@ net_params = NetParams(
 
 flow_params = dict(
     # name of the experiment
-    exp_tag="bottleneck_0",
+    exp_tag="bottleneck",
 
     # name of the flow environment the experiment is running on
     env_name=BottleneckDesiredVelocityEnv,
@@ -120,7 +120,7 @@ flow_params = dict(
 
     # environment related parameters (see flow.core.params.EnvParams)
     env=EnvParams(
-        warmup_steps=200,
+        warmup_steps=40,
         sims_per_step=1,
         horizon=HORIZON,
         additional_params={
