@@ -14,10 +14,10 @@ HORIZON = 3000
 # number of rollouts per training iteration
 N_ROLLOUTS = 20
 # number of parallel workers
-N_CPUS = 10
+N_CPUS = 1
 
-OBS_TYPE = "chatgpt" # Options: ["precise", "only_pos", "chatgpt", "image", "blank"]
-REWARD_FUNC = "chatgpt" # Options: ["wave", "chatgpt"]
+OBS_TYPE = "image" # Options: ["precise", "only_pos", "chatgpt", "image", "blank"]
+REWARD_FUNC = "wave" # Options: ["wave", "chatgpt"]
 EVALUATE = False # Decides whether to save stats or not. This value needs to be changed in run's params.json
 CIRCLE_MASK = True # Decides whether to include a circle mask or not on images
 

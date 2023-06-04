@@ -280,9 +280,9 @@ class AccelEnv(Env):
                         int(sight_radius), (255, 255, 255), thickness=-1)
                 observation = cv2.bitwise_and(observation, observation, mask=mask)
 
-            # observation = Image.fromarray(observation)
-            # observation.save(f'../../michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
-            # observation = np.asarray(observation)
+            observation = Image.fromarray(observation)
+            observation.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+            observation = np.asarray(observation)
             observation = observation / 255.
 
             if self.env_params.additional_params['memory']:

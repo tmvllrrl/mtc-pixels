@@ -30,9 +30,9 @@ RL_PENETRATION = 0.1
 # number of rollouts per training iteration
 N_ROLLOUTS = 10
 # number of parallel workers
-N_CPUS = 10
+N_CPUS = 1
 
-OBS_TYPE = "precise" # Options: ["precise", "image"]
+OBS_TYPE = "image" # Options: ["precise", "image"]
 EVALUATE = False
 CIRCLE_MASK = True
 
@@ -121,6 +121,7 @@ flow_params = dict(
             "evaluate": EVALUATE,
             "num_rl": 5,
             "img_dim": 84,
+            "circle_mask": CIRCLE_MASK
         },
     ),
 

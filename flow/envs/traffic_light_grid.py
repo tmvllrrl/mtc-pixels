@@ -831,7 +831,7 @@ class TrafficLightGridPOEnv(TrafficLightGridEnv):
                 Image-based observations
             '''
             sight_radius = self.sim_params.sight_radius
-            x, y = 400, 373 # These coordinates are for a single intersection
+            x, y = 400, 425 # original 400, 373
             
             observation = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
             left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
@@ -847,9 +847,10 @@ class TrafficLightGridPOEnv(TrafficLightGridEnv):
                         int(sight_radius), (255, 255, 255), thickness=-1)
                 observation = cv2.bitwise_and(observation, observation, mask=mask)
 
-            # observation.save(f'../../michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+            observation = Image.fromarray(observation)
+            observation.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
             # observation = observation.resize((self.img_dim,self.img_dim))
-            # observation = np.asarray(observation)   
+            observation = np.asarray(observation)   
                  
             observation = observation / 255.
 

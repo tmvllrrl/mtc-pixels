@@ -13,7 +13,7 @@ N_ROLLOUTS = 10
 # number of parallel workers
 N_CPUS = 10
 
-OBS_TYPE = "precise" # Options: ["precise", "image", "partial", "blank"]
+OBS_TYPE = "image" # Options: ["precise", "image", "partial", "blank"]
 EVALUTE = False
 REWARD_FUNC = "accel" # Options: ["accel", "wave"]
 MEMORY = False
@@ -44,7 +44,7 @@ vehicles.add(
 
 flow_params = dict(
     # name of the experiment
-    exp_tag='singleagent_figure_eight',
+    exp_tag='figure_eight',
 
     # name of the flow environment the experiment is running on
     env_name=AccelEnv,

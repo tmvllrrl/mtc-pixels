@@ -60,7 +60,7 @@ num_observed_segments = [("1", 1), ("2", 3), ("3", 3), ("4", 3), ("5", 1)]
 
 
 # flow rate
-flow_rate = 2300 * SCALING
+flow_rate = 2500 * SCALING
 
 # percentage of flow coming out of each lane
 inflow = InFlows()
@@ -111,7 +111,7 @@ flow_params = dict(
         render=True,
         print_warnings=False,
         restart_instance=True,
-        sight_radius=64,
+        sight_radius=42,
         additional_params={
             "network": "bottleneck",
             "obs_type": OBS_TYPE
