@@ -301,7 +301,7 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
                 reward += eta * (accel_threshold - mean_actions)
 
             return float(reward)
-        
+            
         elif self.env_params.additional_params['reward'] == "chatgpt":
             
             if rl_actions is None:
@@ -495,7 +495,7 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
             rl_id = self.k.vehicle.get_rl_ids()[0]
             x, y = self.k.vehicle.get_2d_position(rl_id)
             x, y = self.map_coordinates(x, y)
-            observation = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
+            observation = Image.open(f"./sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
             left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
             observation = observation.crop((left, upper, right, lower))
             observation = observation.convert("L")
@@ -511,9 +511,9 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
                         int(sight_radius), (255, 255, 255), thickness=-1)
                 observation = cv2.bitwise_and(observation, observation, mask=mask)
 
-            observation = Image.fromarray(observation)
-            observation.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
-            observation = np.asarray(observation)
+            # observation = Image.fromarray(observation)
+            # observation.save(f'./sumo_obs/example{self.k.simulation.id}_{self.time_counter}.png')
+            # observation = np.asarray(observation)
 
             observation = observation / 255.
 
