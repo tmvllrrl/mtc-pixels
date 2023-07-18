@@ -43,7 +43,7 @@ RL_PENETRATION = 0.2
     precise_og = includes information about traffic lights
     precise_notl = does not include information pertaining to traffic lights
 '''
-OBS_TYPE = "image"
+OBS_TYPE = "precise_og"
 CIRCLE_MASK = False  
 
 

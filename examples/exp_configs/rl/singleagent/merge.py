@@ -32,7 +32,7 @@ N_ROLLOUTS = 10
 # number of parallel workers
 N_CPUS = 1
 
-OBS_TYPE = "image" # Options: ["precise", "image"]
+OBS_TYPE = "precise" # Options: ["precise", "image"]
 EVALUATE = False
 CIRCLE_MASK = True
 

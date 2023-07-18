@@ -22,7 +22,7 @@ N_CPUS = 10
 # number of rollouts per training iteration
 N_ROLLOUTS = 10
 
-OBS_TYPE = "image" # Options: ["precise", "image"]
+OBS_TYPE = "precise" # Options: ["precise", "image"]
 CIRCLE_MASK = True
 
 SCALING = 1

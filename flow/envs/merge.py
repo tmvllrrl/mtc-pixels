@@ -251,9 +251,9 @@ class MergePOEnv(Env):
                             int(sight_radius), (255, 255, 255), thickness=-1)
                     bev = cv2.bitwise_and(bev, bev, mask=mask)
 
-                bev = Image.fromarray(bev)
-                bev.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}_{i}.png')
-                bev = np.asarray(bev)
+                # bev = Image.fromarray(bev)
+                # bev.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}_{i}.png')
+                # bev = np.asarray(bev)
                 
                 bev = bev / 255.
 

@@ -16,7 +16,7 @@ N_ROLLOUTS = 20
 # number of parallel workers
 N_CPUS = 1
 
-OBS_TYPE = "image" # Options: ["precise", "only_pos", "chatgpt", "image", "blank"]
+OBS_TYPE = "precise" # Options: ["precise", "only_pos", "chatgpt", "image", "blank"]
 REWARD_FUNC = "wave" # Options: ["wave", "chatgpt"]
 EVALUATE = False # Decides whether to save stats or not. This value needs to be changed in run's params.json
 CIRCLE_MASK = True # Decides whether to include a circle mask or not on images
