@@ -1031,7 +1031,7 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
                 Code for saving an image observation 
                 '''
                 # bev = Image.fromarray(bev)
-                # bev.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}_{i}.png')
+                # bev.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.time_counter}_{i}.png')
                 # bev = np.asarray(bev)
                 
                 bev = bev / 255.
@@ -1050,43 +1050,43 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
         * Then they're split into segment actions.
         * Then they're split into lane actions.
         """
-        # for rl_id in self.k.vehicle.get_rl_ids():
-        #     edge = self.k.vehicle.get_edge(rl_id)
-        #     lane = self.k.vehicle.get_lane(rl_id)
-        #     if edge:
-        #         # If in outer lanes, on a controlled edge, in a controlled lane
-        #         if edge[0] != ':' and edge in self.controlled_edges:
-        #             pos = self.k.vehicle.get_position(rl_id)
+        for rl_id in self.k.vehicle.get_rl_ids():
+            edge = self.k.vehicle.get_edge(rl_id)
+            lane = self.k.vehicle.get_lane(rl_id)
+            if edge:
+                # If in outer lanes, on a controlled edge, in a controlled lane
+                if edge[0] != ':' and edge in self.controlled_edges:
+                    pos = self.k.vehicle.get_position(rl_id)
 
-        #             if not self.symmetric:
-        #                 num_lanes = self.k.network.num_lanes(edge)
-        #                 # find what segment we fall into
-        #                 bucket = np.searchsorted(self.slices[edge], pos) - 1
-        #                 action = rl_actions[int(lane) + bucket * num_lanes +
-        #                                     self.action_index[edge]]
-        #             else:
-        #                 # find what segment we fall into
-        #                 bucket = np.searchsorted(self.slices[edge], pos) - 1
-        #                 action = rl_actions[bucket + self.action_index[edge]]
+                    if not self.symmetric:
+                        num_lanes = self.k.network.num_lanes(edge)
+                        # find what segment we fall into
+                        bucket = np.searchsorted(self.slices[edge], pos) - 1
+                        action = rl_actions[int(lane) + bucket * num_lanes +
+                                            self.action_index[edge]]
+                    else:
+                        # find what segment we fall into
+                        bucket = np.searchsorted(self.slices[edge], pos) - 1
+                        action = rl_actions[bucket + self.action_index[edge]]
 
-        #             max_speed_curr = self.k.vehicle.get_max_speed(rl_id)
-        #             next_max = np.clip(max_speed_curr + action, 0.01, 23.0)
-        #             self.k.vehicle.set_max_speed(rl_id, next_max)
+                    max_speed_curr = self.k.vehicle.get_max_speed(rl_id)
+                    next_max = np.clip(max_speed_curr + action, 0.01, 23.0)
+                    self.k.vehicle.set_max_speed(rl_id, next_max)
 
-        #         else:
-        #             # set the desired velocity of the controller to the default
-        #             self.k.vehicle.set_max_speed(rl_id, 23.0)
+                else:
+                    # set the desired velocity of the controller to the default
+                    self.k.vehicle.set_max_speed(rl_id, 23.0)
 
-        for i, rl_id in enumerate(self.rl_veh):
-            if rl_id not in self.k.vehicle.get_rl_ids():
-                continue
-            max_speed_curr = self.k.vehicle.get_max_speed(rl_id)
-            next_max = np.clip(max_speed_curr + rl_actions[i], 0.01, 23.0)
-            self.k.vehicle.set_max_speed(rl_id, next_max)
+        # for i, rl_id in enumerate(self.rl_veh):
+        #     if rl_id not in self.k.vehicle.get_rl_ids():
+        #         continue
+        #     max_speed_curr = self.k.vehicle.get_max_speed(rl_id)
+        #     next_max = np.clip(max_speed_curr + rl_actions[i], 0.01, 23.0)
+        #     self.k.vehicle.set_max_speed(rl_id, next_max)
 
-        for i, outside_rl_id in enumerate(self.k.vehicle.get_rl_ids()):
-            if outside_rl_id not in self.rl_veh:
-                self.k.vehicle.set_max_speed(outside_rl_id, 23.0)
+        # for i, outside_rl_id in enumerate(self.k.vehicle.get_rl_ids()):
+        #     if outside_rl_id not in self.rl_veh:
+        #         self.k.vehicle.set_max_speed(outside_rl_id, 23.0)
 
     def compute_reward(self, rl_actions, **kwargs):
         """Outflow rate over last ten seconds normalized to max of 1."""
