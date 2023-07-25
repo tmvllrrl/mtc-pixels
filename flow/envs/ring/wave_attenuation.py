@@ -8,27 +8,26 @@ Benchmarking for Reinforcement Learning in Traffic Control," CoRR, vol.
 abs/1710.05465, 2017. [Online]. Available: https://arxiv.org/abs/1710.05465
 """
 
+import time
+import os
+import cv2
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+
 from email.errors import ObsoleteHeaderDefect
 from flow.core.params import InitialConfig
 from flow.core.params import NetParams
 from flow.envs.base import Env
 
 from space_time import plot_std
-
 from gym.spaces.box import Box
-
 from copy import deepcopy
-import numpy as np
-import random
 from PIL import Image
 from scipy.optimize import fsolve
 
-import uuid
-import time
-import os
+from michael_files.perturb_utils import generate_perturb_img
 
-import cv2
-import matplotlib.pyplot as plt
 
 ADDITIONAL_ENV_PARAMS = {
     # maximum acceleration of autonomous vehicles
@@ -495,23 +494,25 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
             rl_id = self.k.vehicle.get_rl_ids()[0]
             x, y = self.k.vehicle.get_2d_position(rl_id)
             x, y = self.map_coordinates(x, y)
-            observation = Image.open(f"./sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")
-            print(f"OBSERVATION SHAPE: {observation.size}")
-            left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
-            observation = observation.crop((left, upper, right, lower))
-            observation = observation.convert("L")
-            observation = observation.resize((self.img_dim,self.img_dim))
-            observation = np.asarray(observation)
-            observation = self.cv2_clipped_zoom(observation, 1.5)
 
-            if self.env_params.additional_params['circle_mask']:
-                height, width = observation.shape[0:2]
-                sight_radius = height / 2
-                mask = np.zeros((height, width), np.uint8)
-                cv2.circle(mask, (int(sight_radius), int(sight_radius)),
-                        int(sight_radius), (255, 255, 255), thickness=-1)
-                observation = cv2.bitwise_and(observation, observation, mask=mask)
+            observation = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")
 
+            '''
+            Adding perturbation to base, 3-channel image (Image dimensions are: (H, W, C))
+            '''
+            if self.env_params.additional_params["perturb"]:
+                observation = np.asarray(observation)
+                observation = generate_perturb_img(observation, self.time_counter)
+                observation = Image.fromarray(observation)
+
+            '''
+            Transforms the image observation according to static set of transformations.
+            '''
+            observation = self.transform_img(observation, x, y, sight_radius)
+            
+            '''
+            Code for saving an image observation 
+            '''
             # observation = Image.fromarray(observation)
             # observation.save(f'./sumo_obs/example{self.k.simulation.id}_{self.time_counter}.png')
             # observation = np.asarray(observation)
@@ -526,11 +527,6 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
             observation = np.zeros((84,84)) / 255.
             observation = np.asarray(observation)
 
-        
-        # time_taken = time.time() - start_time
-        # with open(f"./time_taken_SPO{self.k.simulation.id}.txt", "a") as logfile:
-        #     logfile.write(f"{time_taken}\n")
-
         return observation
 
     def additional_command(self):
@@ -539,6 +535,28 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
         # rl_id = self.k.vehicle.get_rl_ids()[0]
         # lead_id = self.k.vehicle.get_leader(rl_id) or rl_id
         # self.k.vehicle.set_observed(lead_id)
+
+    def transform_img(self, img, x, y, sight_radius):
+        '''
+            img -> Image object
+            returns numpy array
+        '''
+        left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
+        img = img.crop((left, upper, right, lower))
+        img = img.convert("L")
+        img = img.resize((self.img_dim,self.img_dim))
+        img = np.asarray(img)
+        img = self.cv2_clipped_zoom(img, 1.5)
+
+        if self.env_params.additional_params['circle_mask']:
+            height, width = img.shape[0:2]
+            sight_radius = height / 2
+            mask = np.zeros((height, width), np.uint8)
+            cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+                    int(sight_radius), (255, 255, 255), thickness=-1)
+            img = cv2.bitwise_and(img, img, mask=mask)
+
+        return img
     
     def map_coordinates(self, x, y):
         offset, boundary_width = self.k.simulation.offset, self.k.simulation.boundary_width

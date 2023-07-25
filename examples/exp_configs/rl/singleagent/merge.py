@@ -35,6 +35,7 @@ N_CPUS = 1
 OBS_TYPE = "precise" # Options: ["precise", "image"]
 EVALUATE = False
 CIRCLE_MASK = True
+PERTURB = True
 
 # We consider a highway network with an upstream merging lane producing
 # shockwaves
@@ -121,7 +122,8 @@ flow_params = dict(
             "evaluate": EVALUATE,
             "num_rl": 5,
             "img_dim": 84,
-            "circle_mask": CIRCLE_MASK
+            "circle_mask": CIRCLE_MASK,
+            "perturb": PERTURB
         },
     ),
 

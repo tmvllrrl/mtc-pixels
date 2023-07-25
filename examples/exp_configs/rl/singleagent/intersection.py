@@ -45,6 +45,7 @@ RL_PENETRATION = 0.2
 '''
 OBS_TYPE = "precise_og"
 CIRCLE_MASK = False  
+PERTURB = True
 
 
 # we place a sufficient number of vehicles to ensure they confirm with the
@@ -161,7 +162,8 @@ flow_params = dict(
             "obs_type": OBS_TYPE,
             "circle_mask": CIRCLE_MASK,
             "num_rl": 5,
-            "img_dim": 84
+            "img_dim": 84,
+            "perturb": PERTURB
         },
     ),
 

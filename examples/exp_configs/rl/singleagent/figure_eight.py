@@ -18,6 +18,7 @@ EVALUTE = False
 REWARD_FUNC = "accel" # Options: ["accel", "wave"]
 MEMORY = False
 CIRCLE_MASK = True
+PERTURB = True
 
 # We place one autonomous vehicle and 13 human-driven vehicles in the network
 vehicles = VehicleParams()
@@ -85,7 +86,8 @@ flow_params = dict(
             "img_dim": 84,
             "reward": REWARD_FUNC,
             "memory": MEMORY,
-            "circle_mask": CIRCLE_MASK
+            "circle_mask": CIRCLE_MASK,
+            "perturb": PERTURB
         },
     ),
 

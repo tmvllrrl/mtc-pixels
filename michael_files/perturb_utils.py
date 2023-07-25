@@ -25,6 +25,8 @@ DISTORT_MIN = -2.30258509299
 DISTORT_MAX = 5.3
 COLOR_SCALE = 0.25
 
+
+
 def add_noise(image, sigma):
     row,col,ch= image.shape
     mean = 0
@@ -35,50 +37,26 @@ def add_noise(image, sigma):
     return noisy
 
 def generate_noise_image(image, noise_level=20):
-
     image = add_noise(image, noise_level)
-    image = np.moveaxis(image, -1, 0)
 
     return image
-
-def perturb_noise(image, dist_ratio):
-    noise_level = int(dist_ratio * (200 - 20) + 20)
-    return generate_noise_image(image, noise_level)
 
 def generate_blur_image(image, blur_level=7):
-    
     image = cv2.GaussianBlur(image, (blur_level, blur_level), 0)
-    image = np.moveaxis(image, -1, 0)
 
     return image
 
-def perturb_blur(image, dist_ratio):
-    blur_level = int(dist_ratio * (107 - 7) + 7)
-    if blur_level % 2 == 0: # blur has to be an odd number
-        blur_level += 1
-    
-    return generate_blur_image(image, blur_level)
-
 def generate_distort_image(image, distort_level=1):
-     
     K = np.eye(3)*1000
     K[0,2] = image.shape[1]/2
     K[1,2] = image.shape[0]/2
     K[2,2] = 1
 
     image = cv2.undistort(image, K, np.array([distort_level,distort_level,0,0]))
-    # image = cv2.resize(image, (IMG_WIDTH, IMG_HEIGHT))
-    image = np.moveaxis(image, -1, 0)
 
     return image
 
-def perturb_distort(image, dist_ratio):
-    distort_level = int(dist_ratio * (500 - 1) + 1)
-    return generate_distort_image(image, distort_level)
-
-
 def generate_RGB_image(image, channel, direction, dist_ratio=0.25):
-
     color_str_dic = {
         0: "R",
         1: "G", 
@@ -90,42 +68,18 @@ def generate_RGB_image(image, channel, direction, dist_ratio=0.25):
     else: # raise the channel value
         image[:, :, channel] = (image[:, :, channel] * (1-dist_ratio)) + (RGB_MAX * dist_ratio)
 
-    # added nov 10
-    # image = cv2.resize(image, (IMG_WIDTH, IMG_HEIGHT))
-    image = np.moveaxis(image, -1, 0)
-
     return image
 
 def perturb_r(image, dist_ratio):
     return generate_RGB_image(image, 0, 4 if random.random() < 0.5 else 5, dist_ratio)
 
-def perturb_r_low(image, dist_ratio):
-    return generate_RGB_image(image, 0, 4, dist_ratio)
-
-def perturb_r_high(image, dist_ratio):
-    return generate_RGB_image(image, 0, 5, dist_ratio)
-
 def perturb_g(image, dist_ratio):
     return generate_RGB_image(image, 1, 4 if random.random() < 0.5 else 5, dist_ratio)
-
-def perturb_g_low(image, dist_ratio):
-    return generate_RGB_image(image, 1, 4, dist_ratio)
-
-def perturb_g_high(image, dist_ratio):
-    return generate_RGB_image(image, 1, 5, dist_ratio)
 
 def perturb_b(image, dist_ratio):
     return generate_RGB_image(image, 2, 4 if random.random() < 0.5 else 5, dist_ratio)
 
-def perturb_b_low(image, dist_ratio):
-    return generate_RGB_image(image, 2, 4, dist_ratio)
-
-def perturb_b_high(image, dist_ratio):
-    return generate_RGB_image(image, 2, 5, dist_ratio)
-
-
 def generate_HSV_image(image, channel, direction, dist_ratio=0.25):
-    
     image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
 
     color_str_dic = {
@@ -143,15 +97,37 @@ def generate_HSV_image(image, channel, direction, dist_ratio=0.25):
     if direction == 5:
         image[:, :, channel] = (image[:, :, channel] * (1-dist_ratio)) + (max_val * dist_ratio)
 
-
     image = cv2.cvtColor(image, cv2.COLOR_HSV2RGB)
-    # image = cv2.resize(image, (IMG_WIDTH, IMG_HEIGHT))
-    image = np.moveaxis(image, -1, 0)
 
     return image
 
 def perturb_h(image, dist_ratio):
     return generate_HSV_image(image, 0, 4 if random.random() < 0.5 else 5, dist_ratio)
+
+def perturb_s(image, dist_ratio):
+    return generate_HSV_image(image, 1, 4 if random.random() < 0.5 else 5, dist_ratio)
+
+def perturb_v(image, dist_ratio):
+    return generate_HSV_image(image, 2, 4 if random.random() < 0.5 else 5, dist_ratio)
+
+# FUNCTIONS FOR GENERATING THE 15 BASE PERTURBATIONS
+def perturb_r_low(image, dist_ratio):
+    return generate_RGB_image(image, 0, 4, dist_ratio)
+
+def perturb_r_high(image, dist_ratio):
+    return generate_RGB_image(image, 0, 5, dist_ratio)
+
+def perturb_g_low(image, dist_ratio):
+    return generate_RGB_image(image, 1, 4, dist_ratio)
+
+def perturb_g_high(image, dist_ratio):
+    return generate_RGB_image(image, 1, 5, dist_ratio)
+
+def perturb_b_low(image, dist_ratio):
+    return generate_RGB_image(image, 2, 4, dist_ratio)
+
+def perturb_b_high(image, dist_ratio):
+    return generate_RGB_image(image, 2, 5, dist_ratio)
 
 def perturb_h_low(image, dist_ratio):
     return generate_HSV_image(image, 0, 4, dist_ratio)
@@ -159,17 +135,11 @@ def perturb_h_low(image, dist_ratio):
 def perturb_h_high(image, dist_ratio):
     return generate_HSV_image(image, 0, 5, dist_ratio)
 
-def perturb_s(image, dist_ratio):
-    return generate_HSV_image(image, 1, 4 if random.random() < 0.5 else 5, dist_ratio)
-
 def perturb_s_low(image, dist_ratio):
     return generate_HSV_image(image, 1, 4, dist_ratio)
 
 def perturb_s_high(image, dist_ratio):
     return generate_HSV_image(image, 1, 5, dist_ratio)
-
-def perturb_v(image, dist_ratio):
-    return generate_HSV_image(image, 2, 4 if random.random() < 0.5 else 5, dist_ratio)
 
 def perturb_v_low(image, dist_ratio):
     return generate_HSV_image(image, 2, 4, dist_ratio)
@@ -177,35 +147,32 @@ def perturb_v_low(image, dist_ratio):
 def perturb_v_high(image, dist_ratio):
     return generate_HSV_image(image, 2, 5, dist_ratio)
 
-def clean(image, dist_ratio):
-    return np.moveaxis(image, -1, 0)
-
-def combine(img, dist_ratio):
-    dist_ratio = dist_ratio / 2
-
-    methods = [perturb_r_low, perturb_r_high, perturb_b_low, perturb_b_high, perturb_g_low, perturb_g_high, 
-                perturb_h_low, perturb_h_high, perturb_s_low, perturb_s_high, perturb_v_low, perturb_v_high,
-                perturb_blur, perturb_noise, perturb_distort]
-
-    img_clean = img.copy()
+def perturb_blur(image, dist_ratio):
+    blur_level = int(dist_ratio * (107 - 7) + 7)
+    if blur_level % 2 == 0: # blur has to be an odd number
+        blur_level += 1
     
-    for i in range(3):
-        aug_img = methods[np.random.randint(0, high=len(methods))](img_clean.copy(), dist_ratio)
-        aug_img = np.moveaxis(aug_img, 0, -1)
-        img = np.uint8(np.mean([img, aug_img], axis=0))
+    return generate_blur_image(image, blur_level)
 
-    img = np.moveaxis(img, -1,0)
+def perturb_noise(image, dist_ratio):
+    noise_level = int(dist_ratio * (200 - 20) + 20)
+    return generate_noise_image(image, noise_level)
 
-    return img
+def perturb_distort(image, dist_ratio):
+    distort_level = int(dist_ratio * (500 - 1) + 1)
+    return generate_distort_image(image, distort_level)
 
-def generate_random_image(img, curriculum_max):
+# MAIN FUNCTION
+def generate_perturb_img(img, time_counter):
 
     # Original set of perturbations
     methods = [perturb_r_low, perturb_r_high, perturb_b_low, perturb_b_high, perturb_g_low, perturb_g_high, 
                 perturb_h_low, perturb_h_high, perturb_s_low, perturb_s_high, perturb_v_low, perturb_v_high,
                 perturb_blur, perturb_noise, perturb_distort]
+    
+    i = time_counter % len(methods) # time_counter % 15
 
-    intensity = np.random.uniform(low=0.0, high=curriculum_max) # random intensity
-    aug_img = np.uint8(methods[np.random.randint(0, high=len(methods))](img.copy(), intensity)) # choosing a random perturbation
+    intensity = np.random.uniform(low=0.0, high=1) # random intensity
+    aug_img = np.uint8(methods[i](img.copy(), intensity)) 
 
     return aug_img

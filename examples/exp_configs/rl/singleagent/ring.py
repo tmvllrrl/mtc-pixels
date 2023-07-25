@@ -20,6 +20,7 @@ OBS_TYPE = "image" # Options: ["precise", "only_pos", "chatgpt", "image", "blank
 REWARD_FUNC = "wave" # Options: ["wave", "chatgpt"]
 EVALUATE = False # Decides whether to save stats or not. This value needs to be changed in run's params.json
 CIRCLE_MASK = True # Decides whether to include a circle mask or not on images
+PERTURB = True
 
 
 # We place one autonomous vehicle and 22 human-driven vehicles in the network
@@ -82,7 +83,8 @@ flow_params = dict(
             "reward": REWARD_FUNC,
             "evaluate": EVALUATE, 
             "circle_mask": CIRCLE_MASK,
-            "img_dim": 84
+            "img_dim": 84,
+            "perturb": PERTURB
         },
         
     ),
