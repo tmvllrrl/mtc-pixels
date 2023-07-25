@@ -30,9 +30,9 @@ RL_PENETRATION = 0.1
 # number of rollouts per training iteration
 N_ROLLOUTS = 10
 # number of parallel workers
-N_CPUS = 1
+N_CPUS = 10
 
-OBS_TYPE = "precise" # Options: ["precise", "image"]
+OBS_TYPE = "image" # Options: ["precise", "image"]
 EVALUATE = False
 CIRCLE_MASK = True
 PERTURB = True

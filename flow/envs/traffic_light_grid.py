@@ -833,7 +833,7 @@ class TrafficLightGridPOEnv(TrafficLightGridEnv):
                 Image-based observations
             '''
             sight_radius = self.sim_params.sight_radius
-            x, y = 400, 425 # original 400, 373
+            x, y = 400, 405 # original 400, 373
             
             observation = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        \
 
