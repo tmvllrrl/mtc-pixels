@@ -370,7 +370,7 @@ class MergePOEnv(Env):
 
         x = (((x - offset) + half_width) / boundary_width) * 1600
 
-        return x, 207
+        return x, 343
     
     def cv2_clipped_zoom(self, img, zoom_factor=0):
 

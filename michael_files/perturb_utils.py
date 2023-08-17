@@ -172,7 +172,7 @@ def generate_perturb_img(img, time_counter):
     
     i = time_counter % len(methods) # time_counter % 15
 
-    intensity = np.random.uniform(low=0.0, high=1) # random intensity
+    intensity = np.random.uniform(low=0.0, high=1.0) # random intensity
     aug_img = np.uint8(methods[i](img.copy(), intensity)) 
 
     return aug_img

@@ -20,7 +20,7 @@ HORIZON = 1000
 
 N_CPUS = 10
 # number of rollouts per training iteration
-N_ROLLOUTS = 10
+N_ROLLOUTS = 5
 
 OBS_TYPE = "image" # Options: ["precise", "image"]
 CIRCLE_MASK = True

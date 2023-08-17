@@ -123,7 +123,7 @@ class BottleneckNetwork(Network):
                 "to": "2",
                 "length": 100,
                 "spreadType": "center",
-                "numLanes": 4 * scaling,
+                "numLanes": 5, # 4 * scaling,
                 "speed": speed
             },
             {
@@ -132,7 +132,7 @@ class BottleneckNetwork(Network):
                 "to": "3",
                 "length": 310,
                 "spreadType": "center",
-                "numLanes": 4 * scaling,
+                "numLanes": 5, # 4 * scaling,
                 "speed": speed
             },
             {
@@ -141,7 +141,7 @@ class BottleneckNetwork(Network):
                 "to": "4",
                 "length": 140,
                 "spreadType": "center",
-                "numLanes": 4 * scaling,
+                "numLanes": 5, # 4 * scaling,
                 "speed": speed
             },
             {
@@ -150,7 +150,7 @@ class BottleneckNetwork(Network):
                 "to": "5",
                 "length": 280,
                 "spreadType": "center",
-                "numLanes": 2 * scaling,
+                "numLanes": 3, # 2 * scaling,
                 "speed": speed
             },
             {
@@ -159,7 +159,7 @@ class BottleneckNetwork(Network):
                 "to": "6",
                 "length": 155,
                 "spreadType": "center",
-                "numLanes": scaling,
+                "numLanes": 1, # scaling,
                 "speed": speed
             },
             # fake edge used for visualization

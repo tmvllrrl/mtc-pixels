@@ -10,7 +10,7 @@ VEHICLE_LENGTH = 5
 
 ADDITIONAL_NET_PARAMS = {
     # length of the merge edge
-    "merge_length": 100,
+    "merge_length": 50,
     # length of the highway leading to the merge
     "pre_merge_length": 200,
     # length of the highway past the merge
@@ -96,6 +96,12 @@ class MergeNetwork(Network):
                 "x": 0
             },
             {
+                "id": "top_merge",
+                "y": 0,
+                "x": premerge - 200,
+                "radius": 10
+            },
+            {
                 "id": "center",
                 "y": 0,
                 "x": premerge,
@@ -107,7 +113,7 @@ class MergeNetwork(Network):
                 "x": premerge + postmerge
             },
             {
-                "id": "inflow_merge",
+                "id": "inflow_merge_bottom",
                 "x": premerge - (merge + INFLOW_EDGE_LEN) * cos(angle),
                 "y": -(merge + INFLOW_EDGE_LEN) * sin(angle)
             },
@@ -116,6 +122,16 @@ class MergeNetwork(Network):
                 "x": premerge - merge * cos(angle),
                 "y": -merge * sin(angle)
             },
+            {
+                "id": "inflow_merge_top",
+                "x": premerge - 200 - (merge + INFLOW_EDGE_LEN) * cos(angle),
+                "y": (merge + INFLOW_EDGE_LEN) * sin(angle)
+            },
+            {
+                "id": "top",
+                "x": premerge - 200 - merge * cos(angle),
+                "y": merge * sin(angle)
+            }
         ]
 
         return nodes
@@ -126,31 +142,57 @@ class MergeNetwork(Network):
         premerge = net_params.additional_params["pre_merge_length"]
         postmerge = net_params.additional_params["post_merge_length"]
 
-        edges = [{
+        edges = [
+        {
             "id": "inflow_highway",
             "type": "highwayType",
             "from": "inflow_highway",
             "to": "left",
             "length": INFLOW_EDGE_LEN
-        }, {
+        }, 
+        {
             "id": "left",
             "type": "highwayType",
             "from": "left",
+            "to": "top_merge",
+            "length": premerge - 200
+        }, 
+        {
+            "id": "top_merge",
+            "type": "highwayType",
+            "from": "top_merge",
             "to": "center",
-            "length": premerge
-        }, {
-            "id": "inflow_merge",
+            "length": premerge - 150
+        },
+        {
+            "id": "inflow_merge_bottom",
             "type": "mergeType",
-            "from": "inflow_merge",
+            "from": "inflow_merge_bottom",
             "to": "bottom",
             "length": INFLOW_EDGE_LEN
-        }, {
+        }, 
+        {
             "id": "bottom",
             "type": "mergeType",
             "from": "bottom",
             "to": "center",
             "length": merge
-        }, {
+        }, 
+        {
+            "id": "inflow_merge_top",
+            "type": "mergeType",
+            "from": "inflow_merge_top",
+            "to": "top",
+            "length": INFLOW_EDGE_LEN
+        },
+        {
+            "id": "top",
+            "type": "mergeType",
+            "from": "top",
+            "to": "top_merge",
+            "length": merge
+        },
+        {
             "id": "center",
             "type": "highwayType",
             "from": "center",
@@ -181,11 +223,14 @@ class MergeNetwork(Network):
     def specify_routes(self, net_params):
         """See parent class."""
         rts = {
-            "inflow_highway": ["inflow_highway", "left", "center"],
-            "left": ["left", "center"],
+            "inflow_highway": ["inflow_highway", "left", "top_merge", "center"],
+            "left": ["left", "top_merge", "center"],
+            "top_merge": ["top_merge", "center"],
             "center": ["center"],
-            "inflow_merge": ["inflow_merge", "bottom", "center"],
-            "bottom": ["bottom", "center"]
+            "inflow_merge_bottom": ["inflow_merge_bottom", "bottom", "center"],
+            "bottom": ["bottom", "center"],
+            "inflow_merge_top": ["inflow_merge_top", "top", "top_merge"],
+            "top": ["top", "top_merge"],
         }
 
         return rts
@@ -195,12 +240,16 @@ class MergeNetwork(Network):
         premerge = self.net_params.additional_params["pre_merge_length"]
         postmerge = self.net_params.additional_params["post_merge_length"]
 
-        edgestarts = [("inflow_highway", 0), ("left", INFLOW_EDGE_LEN + 0.1),
-                      ("center", INFLOW_EDGE_LEN + premerge + 22.6),
-                      ("inflow_merge",
-                       INFLOW_EDGE_LEN + premerge + postmerge + 22.6),
-                      ("bottom",
-                       2 * INFLOW_EDGE_LEN + premerge + postmerge + 22.7)]
+        edgestarts = [
+            ("inflow_highway", 0), 
+            ("left", INFLOW_EDGE_LEN + 0.1),
+            ("top_merge", INFLOW_EDGE_LEN + premerge - 200 + 22.6),
+            ("center", INFLOW_EDGE_LEN + premerge + 22.6),
+            ("inflow_merge_bottom", INFLOW_EDGE_LEN + premerge + postmerge + 22.6),
+            ("bottom", 2 * INFLOW_EDGE_LEN + premerge + postmerge + 22.7),
+            ("inflow_merge_top", INFLOW_EDGE_LEN + premerge - 200 + postmerge + 22.6),
+            ("top", 2 * INFLOW_EDGE_LEN + premerge - 200 + postmerge + 22.7),
+        ]
 
         return edgestarts
 
@@ -210,9 +259,11 @@ class MergeNetwork(Network):
         postmerge = self.net_params.additional_params["post_merge_length"]
 
         internal_edgestarts = [
-            (":left", INFLOW_EDGE_LEN), (":center",
-                                         INFLOW_EDGE_LEN + premerge + 0.1),
-            (":bottom", 2 * INFLOW_EDGE_LEN + premerge + postmerge + 22.6)
+            (":left", INFLOW_EDGE_LEN), 
+            (":top_merge", INFLOW_EDGE_LEN + premerge - 200),
+            (":center", INFLOW_EDGE_LEN + premerge + 0.1),
+            (":bottom", 2 * INFLOW_EDGE_LEN + premerge + postmerge + 22.6),
+            (":top", 2 * INFLOW_EDGE_LEN + premerge - 200 + postmerge + 22.6),
         ]
 
         return internal_edgestarts

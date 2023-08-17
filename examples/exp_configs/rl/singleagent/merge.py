@@ -21,7 +21,7 @@ from flow.controllers import SimCarFollowingController, RLController
 HORIZON = 750
 # HORIZON = 700
 # inflow rate at the highway
-FLOW_RATE = 2000
+FLOW_RATE = 1300
 # inflow rate at the merge
 MERGE_RATE = 100
 # percent of autonomous vehicles
@@ -30,7 +30,7 @@ RL_PENETRATION = 0.1
 # number of rollouts per training iteration
 N_ROLLOUTS = 10
 # number of parallel workers
-N_CPUS = 10
+N_CPUS = 5
 
 OBS_TYPE = "image" # Options: ["precise", "image"]
 EVALUATE = False
@@ -42,7 +42,7 @@ PERTURB = True
 additional_net_params = deepcopy(ADDITIONAL_NET_PARAMS)
 additional_net_params["merge_lanes"] = 1
 additional_net_params["highway_lanes"] = 1
-additional_net_params["pre_merge_length"] = 500
+additional_net_params["pre_merge_length"] = 350
 
 # RL vehicles constitute 5% of the total number of vehicles
 vehicles = VehicleParams()
@@ -68,17 +68,23 @@ inflow.add(
     veh_type="human",
     edge="inflow_highway",
     vehs_per_hour=(1 - RL_PENETRATION) * FLOW_RATE,
-    departLane="free",
+    departLane="random",
     departSpeed=10)
 inflow.add(
     veh_type="rl",
     edge="inflow_highway",
     vehs_per_hour=RL_PENETRATION * FLOW_RATE,
-    departLane="free",
+    departLane="random",
     departSpeed=10)
 inflow.add(
     veh_type="human",
-    edge="inflow_merge",
+    edge="inflow_merge_bottom",
+    vehs_per_hour=MERGE_RATE,
+    departLane="free",
+    departSpeed=7.5)
+inflow.add(
+    veh_type="human",
+    edge="inflow_merge_top",
     vehs_per_hour=MERGE_RATE,
     departLane="free",
     departSpeed=7.5)
