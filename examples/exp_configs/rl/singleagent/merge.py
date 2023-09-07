@@ -21,21 +21,21 @@ from flow.controllers import SimCarFollowingController, RLController
 HORIZON = 750
 # HORIZON = 700
 # inflow rate at the highway
-FLOW_RATE = 1300
+FLOW_RATE = 1700
 # inflow rate at the merge
-MERGE_RATE = 100
+MERGE_RATE = 200
 # percent of autonomous vehicles
 RL_PENETRATION = 0.1
 
 # number of rollouts per training iteration
 N_ROLLOUTS = 10
 # number of parallel workers
-N_CPUS = 5
+N_CPUS = 10
 
-OBS_TYPE = "image" # Options: ["precise", "image"]
+OBS_TYPE = "precise" # Options: ["precise", "image"]
 EVALUATE = False
 CIRCLE_MASK = True
-PERTURB = True
+PERTURB = False
 
 # We consider a highway network with an upstream merging lane producing
 # shockwaves
@@ -91,7 +91,7 @@ inflow.add(
 
 flow_params = dict(
     # name of the experiment
-    exp_tag="merge_0",
+    exp_tag="double_merge_precise_HW1700M200",
 
     # name of the flow environment the experiment is running on
     env_name=MergePOEnv,

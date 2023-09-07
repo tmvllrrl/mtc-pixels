@@ -20,11 +20,11 @@ HORIZON = 1000
 
 N_CPUS = 10
 # number of rollouts per training iteration
-N_ROLLOUTS = 5
+N_ROLLOUTS = 10
 
-OBS_TYPE = "image" # Options: ["precise", "image"]
+OBS_TYPE = "precise" # Options: ["precise", "image"]
 CIRCLE_MASK = True
-PERTURB = True
+PERTURB = False
 
 SCALING = 1
 NUM_LANES = 4 * SCALING  # number of lanes in the widest highway
@@ -34,7 +34,7 @@ AV_FRAC = 0.10
 
 vehicles = VehicleParams()
 vehicles.add(
-    veh_id="human",
+    veh_id="passenger",
     routing_controller=(ContinuousRouter, {}),
     car_following_params=SumoCarFollowingParams(
         speed_mode=9,
@@ -42,7 +42,58 @@ vehicles.add(
     lane_change_params=SumoLaneChangeParams(
         lane_change_mode=0,
     ),
-    num_vehicles=1 * SCALING)
+    num_vehicles=1 * SCALING,
+    length=5,
+    gui_shape="passenger")
+vehicles.add(
+    veh_id="public_bus",
+    routing_controller=(ContinuousRouter, {}),
+    car_following_params=SumoCarFollowingParams(
+        speed_mode=9,
+    ),
+    lane_change_params=SumoLaneChangeParams(
+        lane_change_mode=0,
+    ),
+    num_vehicles=1 * SCALING,
+    length=12.2,
+    gui_shape="bus")
+vehicles.add(
+    veh_id="delivery",
+    routing_controller=(ContinuousRouter, {}),
+    car_following_params=SumoCarFollowingParams(
+        speed_mode=9,
+    ),
+    lane_change_params=SumoLaneChangeParams(
+        lane_change_mode=0,
+    ),
+    num_vehicles=1 * SCALING,
+    length=8,
+    gui_shape="delivery")
+vehicles.add(
+    veh_id="semitruck",
+    routing_controller=(ContinuousRouter, {}),
+    car_following_params=SumoCarFollowingParams(
+        speed_mode=9,
+    ),
+    lane_change_params=SumoLaneChangeParams(
+        lane_change_mode=0,
+    ),
+    num_vehicles=1 * SCALING,
+    length=21.9,
+    gui_shape="truck/semitrailer")
+vehicles.add(
+    veh_id="motorcycle",
+    routing_controller=(ContinuousRouter, {}),
+    car_following_params=SumoCarFollowingParams(
+        speed_mode=9,
+    ),
+    lane_change_params=SumoLaneChangeParams(
+        lane_change_mode=0,
+    ),
+    num_vehicles=1 * SCALING,
+    length=1.5,
+    gui_shape="motorcycle")
+
 vehicles.add(
     veh_id="rl",
     acceleration_controller=(RLController, {}),
@@ -61,16 +112,42 @@ num_observed_segments = [("1", 1), ("2", 3), ("3", 3), ("4", 3), ("5", 1)]
 
 
 # flow rate
-flow_rate = 2500 * SCALING
+flow_rate = 2100 * SCALING
 
 # percentage of flow coming out of each lane
 inflow = InFlows()
+
 inflow.add(
-    veh_type="human",
+    veh_type="passenger",
     edge="1",
-    vehs_per_hour=flow_rate * (1 - AV_FRAC),
+    vehs_per_hour=0.7 * (flow_rate * (1 - AV_FRAC)),
     departLane="random",
     departSpeed=10)
+inflow.add(
+    veh_type="public_bus",
+    edge="1",
+    vehs_per_hour=0.05 * (flow_rate * (1 - AV_FRAC)),
+    departLane="random",
+    departSpeed=10)
+inflow.add(
+    veh_type="delivery",
+    edge="1",
+    vehs_per_hour=0.05 * (flow_rate * (1 - AV_FRAC)),
+    departLane="random",
+    departSpeed=10)
+inflow.add(
+    veh_type="semitruck",
+    edge="1",
+    vehs_per_hour=0.1 * (flow_rate * (1 - AV_FRAC)),
+    departLane="random",
+    departSpeed=10)
+inflow.add(
+    veh_type="motorcycle",
+    edge="1",
+    vehs_per_hour=0.1 * (flow_rate * (1 - AV_FRAC)),
+    departLane="random",
+    departSpeed=10)
+
 inflow.add(
     veh_type="rl",
     edge="1",
@@ -95,7 +172,7 @@ net_params = NetParams(
 
 flow_params = dict(
     # name of the experiment
-    exp_tag="bottleneck",
+    exp_tag="bottleneck_hetero_precise_2100",
 
     # name of the flow environment the experiment is running on
     env_name=BottleneckDesiredVelocityEnv,
