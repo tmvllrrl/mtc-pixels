@@ -8,7 +8,7 @@
 
 # python configs/train.py intersection
 
-python configs/train.py bottleneck
+# python configs/train.py bottleneck
 
 
 
