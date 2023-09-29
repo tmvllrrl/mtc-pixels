@@ -126,7 +126,7 @@ class TraCISimulation(KernelSimulation):
             (Makes the experiments run faster)
         '''
         if self.sim_params.additional_params["obs_type"] in ["image", "blank"]:
-            img_save_path = f"./sumo_obs/"
+            img_save_path = f"./mtc_pixels/sumo_obs/"
             if not os.path.exists(img_save_path):
                 os.mkdir(img_save_path)
 
@@ -143,7 +143,7 @@ class TraCISimulation(KernelSimulation):
 
                 self.boundary_width = abs(boundary_min) + abs(boundary_max)
 
-            self.kernel_api.gui.screenshot(traci.gui.DEFAULT_VIEW, f"./sumo_obs/state_{self.id}.jpeg")
+            self.kernel_api.gui.screenshot(traci.gui.DEFAULT_VIEW, f"./mtc_pixels/sumo_obs/state_{self.id}.jpeg")
 
         self.kernel_api.simulationStep()
         

@@ -33,7 +33,7 @@ N_LEFT, N_RIGHT, N_TOP, N_BOTTOM = 1, 1, 1, 1
 # number of rollouts per training iteration
 N_ROLLOUTS = 10
 # number of parallel workers
-N_CPUS = 1
+N_CPUS = 10
 
 RL_PENETRATION = 0.2
 
@@ -43,8 +43,9 @@ RL_PENETRATION = 0.2
     precise_og = includes information about traffic lights
     precise_notl = does not include information pertaining to traffic lights
 '''
-OBS_TYPE = "precise_og"
+OBS_TYPE = "image"
 CIRCLE_MASK = False  
+PERTURB = False
 
 
 # we place a sufficient number of vehicles to ensure they confirm with the
@@ -161,7 +162,8 @@ flow_params = dict(
             "obs_type": OBS_TYPE,
             "circle_mask": CIRCLE_MASK,
             "num_rl": 5,
-            "img_dim": 84
+            "img_dim": 84,
+            "perturb": PERTURB
         },
     ),
 

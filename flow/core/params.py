@@ -262,7 +262,9 @@ class VehicleParams:
             num_vehicles=0,
             car_following_params=None,
             lane_change_params=None,
-            color=None):
+            color=None,
+            length=5,
+            gui_shape="passenger"):
         """Add a sequence of vehicles to the list of vehicles in the network.
 
         Parameters
@@ -316,6 +318,29 @@ class VehicleParams:
         if color:
             type_params['color'] = color
             self.type_parameters[veh_id]['color'] = color
+
+        if veh_id == "passenger":
+            length = 5
+            gui_shape = "passenger"
+        elif veh_id == "public_bus":
+            length = 12.2
+            gui_shape = "bus"
+        elif veh_id == "delivery":
+            length = 8
+            gui_shape = "delivery"
+        elif veh_id == "semitruck":
+            length = 21.9
+            gui_shape = "truck/semitrailer"
+        elif veh_id == "motorcycle":
+            length = 1.5
+            gui_shape = "motorcycle"
+
+        type_params['length'] = length
+        self.type_parameters[veh_id]['length'] = length
+
+        type_params['guiShape'] = gui_shape
+        self.type_parameters[veh_id]['gui_shape'] = gui_shape
+
 
         # TODO: delete?
         self.initial.append({
@@ -1249,6 +1274,7 @@ class InFlows:
         new_inflow = {
             "name": "%s_%d" % (name, len(self.__flows)),
             "vtype": veh_type,
+            # "vclass": "passenger", # SEEING IF THIS BREAKS ANYTHING
             "edge": edge,
             "departLane": depart_lane,
             "departSpeed": depart_speed,

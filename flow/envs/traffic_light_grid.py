@@ -17,6 +17,8 @@ from gym.spaces import Tuple
 from flow.core import rewards
 from flow.envs.base import Env
 
+from mtc_pixels.perturb_utils import generate_perturb_img
+
 ADDITIONAL_ENV_PARAMS = {
     # minimum switch time for each traffic light (in seconds)
     "switch_time": 2.0,
@@ -831,25 +833,28 @@ class TrafficLightGridPOEnv(TrafficLightGridEnv):
                 Image-based observations
             '''
             sight_radius = self.sim_params.sight_radius
-            x, y = 400, 425 # original 400, 373
+            x, y = 400, 405 # original 400, 373
             
-            observation = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
-            left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
-            observation = observation.crop((left, upper, right, lower))
-            observation = observation.convert("L").resize((self.img_dim,self.img_dim))
-            observation = np.asarray(observation)
+            observation = Image.open(f"./mtc_pixels/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        \
 
-            if self.env_params.additional_params['circle_mask']:
-                height, width = observation.shape[0:2]
-                sight_radius = height / 2
-                mask = np.zeros((height, width), np.uint8)
-                cv2.circle(mask, (int(sight_radius), int(sight_radius)),
-                        int(sight_radius), (255, 255, 255), thickness=-1)
-                observation = cv2.bitwise_and(observation, observation, mask=mask)
+            '''
+            Adding perturbation to base, 3-channel image (Image dimensions are: (H, W, C))
+            '''
+            if self.env_params.additional_params["perturb"]:
+                observation = np.asarray(observation)
+                observation = generate_perturb_img(observation, self.time_counter)
+                observation = Image.fromarray(observation)
 
+            '''
+            Transforms the image observation according to static set of transformations.
+            '''
+            observation = self.transform_img(observation, x, y, sight_radius)
+            
+            '''
+            Code for saving an image observation 
+            '''
             # observation = Image.fromarray(observation)
-            # observation.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
-            # observation = observation.resize((self.img_dim,self.img_dim))
+            # observation.save(f'./mtc_pixels/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
             # observation = np.asarray(observation)   
                  
             observation = observation / 255.
@@ -905,6 +910,22 @@ class TrafficLightGridPOEnv(TrafficLightGridEnv):
         while len(self.rl_queue) > 0 and len(self.rl_veh) < self.num_rl:
             rl_id = self.rl_queue.popleft()
             self.rl_veh.append(rl_id)
+
+    def transform_img(self, img, x, y, sight_radius):
+        left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
+        img = img.crop((left, upper, right, lower))
+        img = img.convert("L").resize((self.img_dim,self.img_dim))
+        img = np.asarray(img)
+
+        if self.env_params.additional_params['circle_mask']:
+            height, width = img.shape[0:2]
+            sight_radius = height / 2
+            mask = np.zeros((height, width), np.uint8)
+            cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+                    int(sight_radius), (255, 255, 255), thickness=-1)
+            img = cv2.bitwise_and(img, img, mask=mask)
+
+        return img
 
     def map_coordinates(self, x, y):
         x, y = 400, 373 # These coordinates are for a single intersection

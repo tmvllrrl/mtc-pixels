@@ -9,7 +9,7 @@ import numpy as np
 import os
 import ray
 
-from examples.sumo.bottlenecks import bottleneck_example
+from configs.sumo.bottlenecks import bottleneck_example
 
 
 @ray.remote

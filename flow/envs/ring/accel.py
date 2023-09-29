@@ -14,6 +14,8 @@ import os
 import random
 from PIL import Image
 
+from mtc_pixels.perturb_utils import generate_perturb_img
+
 
 ADDITIONAL_ENV_PARAMS = {
     # maximum acceleration for autonomous vehicles, in m/s^2
@@ -191,22 +193,22 @@ class AccelEnv(Env):
             '''
             if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
                 
-                if not os.path.exists(f"./michael_files/{results_dir}/"):
-                   os.mkdir(f"./michael_files/{results_dir}/")
+                if not os.path.exists(f"./mtc_pixels/{results_dir}/"):
+                   os.mkdir(f"./mtc_pixels/{results_dir}/")
             
-                with open(f"./michael_files/{results_dir}/avg_velocity.txt", "a") as f:
+                with open(f"./mtc_pixels/{results_dir}/avg_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
                 
-                with open(f"./michael_files/{results_dir}/min_velocity.txt", "a") as f:
+                with open(f"./mtc_pixels/{results_dir}/min_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
                 
-                with open(f"./michael_files/{results_dir}/rl_velocity.txt", "a") as f:
+                with open(f"./mtc_pixels/{results_dir}/rl_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
             
-                with open(f"./michael_files/{results_dir}/rl_accel_realized.txt", "a") as f:
+                with open(f"./mtc_pixels/{results_dir}/rl_accel_realized.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
                     f.write("\n")
 
@@ -265,21 +267,25 @@ class AccelEnv(Env):
             rl_id = self.k.vehicle.get_rl_ids()[0]
             x, y = self.k.vehicle.get_2d_position(rl_id)
             x, y = self.map_coordinates(x, y)
-            observation = Image.open(f"./sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
-            left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
-            observation = observation.crop((left, upper, right, lower))
-            observation = observation.convert("L").resize((self.img_dim, self.img_dim))
-            observation = np.asarray(observation)
-            observation = self.cv2_clipped_zoom(observation, 1.5) # Zoom in on the image
 
-            if self.env_params.additional_params['circle_mask']:
-                height, width = observation.shape[0:2]
-                sight_radius = height / 2
-                mask = np.zeros((height, width), np.uint8)
-                cv2.circle(mask, (int(sight_radius), int(sight_radius)),
-                        int(sight_radius), (255, 255, 255), thickness=-1)
-                observation = cv2.bitwise_and(observation, observation, mask=mask)
+            observation = Image.open(f"./mtc_pixels/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")
 
+            '''
+            Adding perturbation to base, 3-channel image (Image dimensions are: (H, W, C))
+            '''
+            if self.env_params.additional_params["perturb"]:
+                observation = np.asarray(observation)
+                observation = generate_perturb_img(observation, self.time_counter)
+                observation = Image.fromarray(observation)
+
+            '''
+            Transforms the image observation according to static set of transformations.
+            '''      
+            observation = self.transform_img(observation, x, y, sight_radius)
+
+            '''
+            Code for saving image observations
+            '''
             # observation = Image.fromarray(observation)
             # observation.save(f'./sumo_obs/example{self.k.simulation.id}_{self.time_counter}.png')
             # observation = np.asarray(observation)
@@ -416,6 +422,23 @@ class AccelEnv(Env):
             self.prev_pos[veh_id] = self.k.vehicle.get_x_by_id(veh_id)
 
         return super().reset()
+    
+    def transform_img(self, img, x, y, sight_radius):
+        left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
+        img = img.crop((left, upper, right, lower))
+        img = img.convert("L").resize((self.img_dim, self.img_dim))
+        img = np.asarray(img)
+        img = self.cv2_clipped_zoom(img, 1.5) # Zoom in on the image
+
+        if self.env_params.additional_params['circle_mask']:
+            height, width = img.shape[0:2]
+            sight_radius = height / 2
+            mask = np.zeros((height, width), np.uint8)
+            cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+                    int(sight_radius), (255, 255, 255), thickness=-1)
+            img = cv2.bitwise_and(img, img, mask=mask)
+
+        return img
 
     def map_coordinates(self, x, y):
         offset, boundary_width = self.k.simulation.offset, self.k.simulation.boundary_width

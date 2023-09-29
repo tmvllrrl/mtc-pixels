@@ -16,6 +16,8 @@ import os
 import cv2
 import collections
 
+from mtc_pixels.perturb_utils import generate_perturb_img
+
 ADDITIONAL_ENV_PARAMS = {
     # maximum acceleration for autonomous vehicles, in m/s^2
     "max_accel": 3,
@@ -148,22 +150,22 @@ class MergePOEnv(Env):
 
             if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
                 
-                if not os.path.exists(f"../../michael_files/{results_dir}/"):
-                    os.mkdir(f"./michael_files/{results_dir}/")
+                if not os.path.exists(f"./mtc_pixels/{results_dir}/"):
+                    os.mkdir(f"./mtc_pixels/{results_dir}/")
             
-                with open(f"../../michael_files/{results_dir}/avg_velocity.txt", "a") as f:
+                with open(f"./mtc_pixels/{results_dir}/avg_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
                 
-                with open(f"../../michael_files/{results_dir}/min_velocity.txt", "a") as f:
+                with open(f"./mtc_pixels/{results_dir}/min_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
                 
-                with open(f"../../michael_files/{results_dir}/rl_velocity.txt", "a") as f:
+                with open(f"./mtc_pixels/{results_dir}/rl_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
             
-                with open(f"../../michael_files/{results_dir}/rl_accel_realized.txt", "a") as f:
+                with open(f"./mtc_pixels/{results_dir}/rl_accel_realized.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
                     f.write("\n")
 
@@ -236,23 +238,26 @@ class MergePOEnv(Env):
                     continue
                 x, y = self.map_coordinates(x, y)
                 
-                bev = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
-                left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
-                bev = bev.crop((left, upper, right, lower))
-                bev = bev.convert("L").resize((self.img_dim,self.img_dim))
-                bev = np.asarray(bev)
-                bev = self.cv2_clipped_zoom(bev, 1.5)
+                bev = Image.open(f"./mtc_pixels/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB") 
 
-                if self.env_params.additional_params['circle_mask']:
-                    height, width = bev.shape[0:2]
-                    sight_radius = height / 2
-                    mask = np.zeros((height, width), np.uint8)
-                    cv2.circle(mask, (int(sight_radius), int(sight_radius)),
-                            int(sight_radius), (255, 255, 255), thickness=-1)
-                    bev = cv2.bitwise_and(bev, bev, mask=mask)
+                '''
+                Adding perturbation to base, 3-channel image (Image dimensions are: (H, W, C))
+                '''
+                if self.env_params.additional_params["perturb"]:
+                    bev = np.asarray(bev)
+                    bev = generate_perturb_img(bev, self.time_counter)
+                    bev = Image.fromarray(bev)
 
+                '''
+                Transforms the image observation according to static set of transformations.
+                '''
+                bev = self.transform_img(bev, x, y, sight_radius)
+                
+                '''
+                Code for saving an image observation 
+                '''
                 # bev = Image.fromarray(bev)
-                # bev.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}_{i}.png')
+                # bev.save(f'./mtc_pixels/sumo_obs/example{self.k.simulation.id}_{self.time_counter}_{i}.png')
                 # bev = np.asarray(bev)
                 
                 bev = bev / 255.
@@ -341,6 +346,23 @@ class MergePOEnv(Env):
         self.rl_accel_realized_collector = []
 
         return super().reset()
+    
+    def transform_img(self, img, x, y, sight_radius):
+        left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
+        img = img.crop((left, upper, right, lower))
+        img = img.convert("L").resize((self.img_dim,self.img_dim))
+        img = np.asarray(img)
+        img = self.cv2_clipped_zoom(img, 1.5)
+
+        if self.env_params.additional_params['circle_mask']:
+            height, width = img.shape[0:2]
+            sight_radius = height / 2
+            mask = np.zeros((height, width), np.uint8)
+            cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+                    int(sight_radius), (255, 255, 255), thickness=-1)
+            img = cv2.bitwise_and(img, img, mask=mask)
+
+        return img
 
     def map_coordinates(self, x, y):
         offset, boundary_width = self.k.simulation.offset, self.k.simulation.boundary_width
@@ -348,7 +370,7 @@ class MergePOEnv(Env):
 
         x = (((x - offset) + half_width) / boundary_width) * 1600
 
-        return x, 207
+        return x, 343
     
     def cv2_clipped_zoom(self, img, zoom_factor=0):
 

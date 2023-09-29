@@ -28,6 +28,8 @@ from gym.spaces.box import Box
 from flow.core import rewards
 from flow.envs.base import Env
 
+from mtc_pixels.perturb_utils import generate_perturb_img
+
 MAX_LANES = 4  # base number of largest number of lanes in the network
 EDGE_LIST = ["1", "2", "3", "4", "5"]  # Edge 1 is before the toll booth
 EDGE_BEFORE_TOLL = "1"  # Specifies which edge number is before toll booth
@@ -879,21 +881,31 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
 
     @property
     def action_space(self):
-        """See class definition."""
-        if self.symmetric:
-            action_size = self.total_controlled_segments
-        else:
-            action_size = 0.0
-            for segment in self.segments:  # iterate over segments
-                if segment[2]:  # if controlled
-                    num_lanes = self.k.network.num_lanes(segment[0])
-                    action_size += num_lanes * segment[1]
+        obs_type = self.env_params.additional_params['obs_type']
+
         add_params = self.env_params.additional_params
         max_accel = add_params.get("max_accel")
         max_decel = add_params.get("max_decel")
-        return Box(
-            low=-max_decel*self.sim_step, high=max_accel*self.sim_step,
-            shape=(int(self.num_rl), ), dtype=np.float32)
+
+        if obs_type == "precise":
+            """See class definition."""
+            if self.symmetric:
+                action_size = self.total_controlled_segments
+            else:
+                action_size = 0.0
+                for segment in self.segments:  # iterate over segments
+                    if segment[2]:  # if controlled
+                        num_lanes = self.k.network.num_lanes(segment[0])
+                        action_size += num_lanes * segment[1]
+            
+            return Box(
+                low=-max_decel*self.sim_step, high=max_accel*self.sim_step,
+                shape=(int(action_size), ), dtype=np.float32)
+        
+        elif obs_type == "image":
+            return Box(
+                low=-max_decel*self.sim_step, high=max_accel*self.sim_step,
+                shape=(int(self.num_rl), ), dtype=np.float32)
 
     def get_state(self):
 
@@ -1010,24 +1022,26 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
                     continue
                 x, y = self.map_coordinates(x,y)
 
-                bev = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        
-                left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
-                bev = bev.crop((left, upper, right, lower))
-                bev = bev.convert("L").resize((self.img_dim,self.img_dim))
-                bev = np.asarray(bev)
-                bev = self.cv2_clipped_zoom(bev, 1.5)
+                bev = Image.open(f"./mtc_pixels/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")     
 
-                if self.env_params.additional_params['circle_mask']:
-                    height, width = bev.shape[0:2]
-                    sight_radius = height / 2
-                    mask = np.zeros((height, width), np.uint8)
-                    cv2.circle(mask, (int(sight_radius), int(sight_radius)),
-                            int(sight_radius), (255, 255, 255), thickness=-1)
-                    bev = cv2.bitwise_and(bev, bev, mask=mask)
+                '''
+                Adding perturbation to base, 3-channel image (Image dimensions are: (H, W, C))
+                '''
+                if self.env_params.additional_params["perturb"]:
+                    bev = np.asarray(bev)
+                    bev = generate_perturb_img(bev, self.time_counter)
+                    bev = Image.fromarray(bev)
 
+                '''
+                Transforms the image observation according to static set of transformations.
+                '''
+                bev = self.transform_img(bev, x, y, sight_radius)
+                
+                '''
+                Code for saving an image observation 
+                '''
                 # bev = Image.fromarray(bev)
-                # bev.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}_{i}.png')
-                # bev = bev.resize((self.img_dim, self.img_dim))
+                # bev.save(f'./mtc_pixels/sumo_obs/example{self.k.simulation.id}_{self.time_counter}_{i}.png')
                 # bev = np.asarray(bev)
                 
                 bev = bev / 255.
@@ -1039,50 +1053,56 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
         return observation
 
     def _apply_rl_actions(self, rl_actions):
-        """
-        RL actions are split up into 3 levels.
+        
+        obs_type = self.env_params.additional_params['obs_type']
 
-        * First, they're split into edge actions.
-        * Then they're split into segment actions.
-        * Then they're split into lane actions.
-        """
-        # for rl_id in self.k.vehicle.get_rl_ids():
-        #     edge = self.k.vehicle.get_edge(rl_id)
-        #     lane = self.k.vehicle.get_lane(rl_id)
-        #     if edge:
-        #         # If in outer lanes, on a controlled edge, in a controlled lane
-        #         if edge[0] != ':' and edge in self.controlled_edges:
-        #             pos = self.k.vehicle.get_position(rl_id)
+        if obs_type == "precise":
+            """
+            RL actions are split up into 3 levels.
 
-        #             if not self.symmetric:
-        #                 num_lanes = self.k.network.num_lanes(edge)
-        #                 # find what segment we fall into
-        #                 bucket = np.searchsorted(self.slices[edge], pos) - 1
-        #                 action = rl_actions[int(lane) + bucket * num_lanes +
-        #                                     self.action_index[edge]]
-        #             else:
-        #                 # find what segment we fall into
-        #                 bucket = np.searchsorted(self.slices[edge], pos) - 1
-        #                 action = rl_actions[bucket + self.action_index[edge]]
+            * First, they're split into edge actions.
+            * Then they're split into segment actions.
+            * Then they're split into lane actions.
+            """
+            for rl_id in self.k.vehicle.get_rl_ids():
+                edge = self.k.vehicle.get_edge(rl_id)
+                lane = self.k.vehicle.get_lane(rl_id)
+                if edge:
+                    # If in outer lanes, on a controlled edge, in a controlled lane
+                    if edge[0] != ':' and edge in self.controlled_edges:
+                        pos = self.k.vehicle.get_position(rl_id)
 
-        #             max_speed_curr = self.k.vehicle.get_max_speed(rl_id)
-        #             next_max = np.clip(max_speed_curr + action, 0.01, 23.0)
-        #             self.k.vehicle.set_max_speed(rl_id, next_max)
+                        if not self.symmetric:
+                            num_lanes = self.k.network.num_lanes(edge)
+                            # find what segment we fall into
+                            bucket = np.searchsorted(self.slices[edge], pos) - 1
+                            action = rl_actions[int(lane) + bucket * num_lanes +
+                                                self.action_index[edge]]
+                        else:
+                            # find what segment we fall into
+                            bucket = np.searchsorted(self.slices[edge], pos) - 1
+                            action = rl_actions[bucket + self.action_index[edge]]
 
-        #         else:
-        #             # set the desired velocity of the controller to the default
-        #             self.k.vehicle.set_max_speed(rl_id, 23.0)
+                        max_speed_curr = self.k.vehicle.get_max_speed(rl_id)
+                        next_max = np.clip(max_speed_curr + action, 0.01, 23.0)
+                        self.k.vehicle.set_max_speed(rl_id, next_max)
 
-        for i, rl_id in enumerate(self.rl_veh):
-            if rl_id not in self.k.vehicle.get_rl_ids():
-                continue
-            max_speed_curr = self.k.vehicle.get_max_speed(rl_id)
-            next_max = np.clip(max_speed_curr + rl_actions[i], 0.01, 23.0)
-            self.k.vehicle.set_max_speed(rl_id, next_max)
+                    else:
+                        # set the desired velocity of the controller to the default
+                        self.k.vehicle.set_max_speed(rl_id, 23.0)
 
-        for i, outside_rl_id in enumerate(self.k.vehicle.get_rl_ids()):
-            if outside_rl_id not in self.rl_veh:
-                self.k.vehicle.set_max_speed(outside_rl_id, 23.0)
+        elif obs_type == "image":
+            for i, rl_id in enumerate(self.rl_veh):
+                if rl_id not in self.k.vehicle.get_rl_ids():
+                    continue
+
+                max_speed_curr = self.k.vehicle.get_max_speed(rl_id)
+                next_max = np.clip(max_speed_curr + rl_actions[i], 0.01, 23.0)
+                self.k.vehicle.set_max_speed(rl_id, next_max)
+
+            for i, outside_rl_id in enumerate(self.k.vehicle.get_rl_ids()):
+                if outside_rl_id not in self.rl_veh:
+                    self.k.vehicle.set_max_speed(outside_rl_id, 23.0)
 
     def compute_reward(self, rl_actions, **kwargs):
         """Outflow rate over last ten seconds normalized to max of 1."""
@@ -1095,7 +1115,23 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
             reward = self.k.vehicle.get_outflow_rate(10 * self.sim_step) / \
                 (2000.0 * self.scaling)
         return reward
-        
+    
+    def transform_img(self, img, x, y, sight_radius):
+        left, upper, right, lower = x - sight_radius, y - sight_radius, x + sight_radius, y + sight_radius
+        img = img.crop((left, upper, right, lower))
+        img = img.convert("L").resize((self.img_dim,self.img_dim))
+        img = np.asarray(img)
+        img = self.cv2_clipped_zoom(img, 1.5)
+
+        if self.env_params.additional_params['circle_mask']:
+            height, width = img.shape[0:2]
+            sight_radius = height / 2
+            mask = np.zeros((height, width), np.uint8)
+            cv2.circle(mask, (int(sight_radius), int(sight_radius)),
+                    int(sight_radius), (255, 255, 255), thickness=-1)
+            img = cv2.bitwise_and(img, img, mask=mask)
+
+        return img
     
     def map_coordinates(self, x, y):
         offset, boundary_width = self.k.simulation.offset, self.k.simulation.boundary_width

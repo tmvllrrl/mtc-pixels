@@ -338,7 +338,7 @@ class TraCIVehicle(KernelVehicle):
             tc.VAR_ANGLE,
             tc.VAR_SPEED_WITHOUT_TRACI,
             tc.VAR_FUELCONSUMPTION,
-            tc.VAR_DISTANCE
+            tc.VAR_DISTANCE,
         ])
         self.kernel_api.vehicle.subscribeLeader(veh_id, 2000)
 
@@ -598,6 +598,12 @@ class TraCIVehicle(KernelVehicle):
         if isinstance(veh_id, (list, np.ndarray)):
             return [self.get_length(vehID, error) for vehID in veh_id]
         return self.__vehicles.get(veh_id, {}).get("length", error)
+    
+    def get_veh_class(self, veh_id, error=-1001):
+        """See parent class."""
+        if isinstance(veh_id, (list, np.ndarray)):
+            return [self.get_veh_class(vehID, error) for vehID in veh_id]
+        return self.__vehicles.get(veh_id, {}).get(tc.VAR_VEHICLECLASS, error)
 
     def get_leader(self, veh_id, error=""):
         """See parent class."""

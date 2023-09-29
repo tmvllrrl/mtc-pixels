@@ -1,56 +1,55 @@
-"""Figure eight example."""
+"""Ring road example.
+
+Trains a single autonomous vehicle to stabilize the flow of 21 human-driven
+vehicles in a variable length ring road.
+"""
 from flow.core.params import SumoParams, EnvParams, InitialConfig, NetParams
 from flow.core.params import VehicleParams, SumoCarFollowingParams
-from flow.controllers import IDMController, ContinuousRouter, RLController
-from flow.networks.figure_eight import ADDITIONAL_NET_PARAMS
-from flow.envs import AccelEnv
-from flow.networks import FigureEightNetwork
+from flow.controllers import RLController, IDMController, ContinuousRouter
+from flow.envs import WaveAttenuationPOEnv
+from flow.networks import RingNetwork
 
 # time horizon of a single rollout
-HORIZON = 1500
+HORIZON = 3000
 # number of rollouts per training iteration
 N_ROLLOUTS = 10
 # number of parallel workers
 N_CPUS = 10
 
-OBS_TYPE = "precise" # Options: ["precise", "image", "partial", "blank"]
-EVALUTE = False
-REWARD_FUNC = "accel" # Options: ["accel", "wave"]
-MEMORY = False
-CIRCLE_MASK = True
+OBS_TYPE = "image" # Options: ["precise", "only_pos", "chatgpt", "image", "blank"]
+REWARD_FUNC = "wave" # Options: ["wave", "chatgpt"]
+EVALUATE = False # Decides whether to save stats or not. This value needs to be changed in run's params.json
+CIRCLE_MASK = True # Decides whether to include a circle mask or not on images
+PERTURB = False
 
-# We place one autonomous vehicle and 13 human-driven vehicles in the network
+
+# We place one autonomous vehicle and 22 human-driven vehicles in the network
 vehicles = VehicleParams()
 vehicles.add(
-    veh_id='human',
+    veh_id="human",
     acceleration_controller=(IDMController, {
-        'noise': 0.2
+        "noise": 0.2
     }),
-    routing_controller=(ContinuousRouter, {}),
     car_following_params=SumoCarFollowingParams(
-        speed_mode="obey_safe_speed",
-        decel=1.5,
+        min_gap=0
     ),
-    num_vehicles=13)
+    routing_controller=(ContinuousRouter, {}),
+    num_vehicles=21)
 vehicles.add(
-    veh_id='rl',
+    veh_id="rl",
     acceleration_controller=(RLController, {}),
     routing_controller=(ContinuousRouter, {}),
-    car_following_params=SumoCarFollowingParams(
-        speed_mode="obey_safe_speed",
-        # decel=1.5,
-    ),
     num_vehicles=1)
 
 flow_params = dict(
     # name of the experiment
-    exp_tag='figure_eight',
+    exp_tag="singleagent_ring",
 
     # name of the flow environment the experiment is running on
-    env_name=AccelEnv,
+    env_name=WaveAttenuationPOEnv,
 
     # name of the network class the experiment is running on
-    network=FigureEightNetwork,
+    network=RingNetwork,
 
     # simulator that is used by the experiment
     simulator='traci',
@@ -61,44 +60,44 @@ flow_params = dict(
         render=True,
         save_render=False,
         restart_instance=False,
-        sight_radius=30,
+        sight_radius=42,
         show_radius=False,
         additional_params={
-            "network": "figure_8",
-            "obs_type": OBS_TYPE, 
+            "network": "ring",
+            "obs_type": OBS_TYPE,
         }
-        # emission_path="./michael_files/emission_collection/"
+        # emission_path="../../michael_files/emission_collection/"
+
     ),
 
     # environment related parameters (see flow.core.params.EnvParams)
     env=EnvParams(
         horizon=HORIZON,
-        warmup_steps=750,
+        warmup_steps=3000,
+        clip_actions=False,
         additional_params={
-            "target_velocity": 20,
-            "max_accel": 3,
-            "max_decel": 3,
-            "sort_vehicles": False,
-            "radius_ring": [20,30],
+            "max_accel": 1,
+            "max_decel": 1,
+            "ring_length": [220, 270],
             "obs_type": OBS_TYPE, 
-            "evaluate": EVALUTE,
-            "img_dim": 84,
             "reward": REWARD_FUNC,
-            "memory": MEMORY,
-            "circle_mask": CIRCLE_MASK
+            "evaluate": EVALUATE, 
+            "circle_mask": CIRCLE_MASK,
+            "img_dim": 84,
+            "perturb": PERTURB
         },
+        
     ),
 
     # network-related parameters (see flow.core.params.NetParams and the
     # network's documentation or ADDITIONAL_NET_PARAMS component)
     net=NetParams(
         additional_params={
-            "radius_ring": 32,
+            "length": 260,
             "lanes": 1,
             "speed_limit": 30,
-            "resolution": 40
-        },
-    ),
+            "resolution": 40,
+        }, ),
 
     # vehicles to be placed in the network at the start of a rollout (see
     # flow.core.params.VehicleParams)

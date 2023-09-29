@@ -146,7 +146,7 @@ def setup_exps_rllib(flow_params,
     agent_cls = get_trainer_class(alg_run)
     config = deepcopy(agent_cls._default_config)
 
-    config["num_workers"] = 10
+    config["num_workers"] = 5
     config["train_batch_size"] = horizon * n_rollouts
     # config["train_batch_size"] = 256
     config["gamma"] = 0.999  # discount rate
