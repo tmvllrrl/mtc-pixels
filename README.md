@@ -1,11 +1,5 @@
 # Mixed Traffic Control and Coordination from Pixels
 
-This code base originally comes from Dr. Cathy Wu's Flow paper:
-
-C. Wu, A. Kreidieh, K. Parvate, E. Vinitsky, A. Bayen, "Flow: Architecture and Benchmarking for Reinforcement Learning in Traffic Control," CoRR, vol. abs/1710.05465, 2017. [Online]. Available: https://arxiv.org/abs/1710.05465
-
-Please cite the original Flow paper if citing this work.
-
 ## Installation
 
 Instructions for installing and setting up everything for this repo are located [here.](https://docs.google.com/document/d/1Niz2ysr3W74fNFhhazhC540pEqdYxzkTznYa0d7TiiU/edit?usp=sharing)
@@ -26,7 +20,7 @@ Example commands for evaluating a trained policy are provided in eval.sh. More d
 
 ## Citing
 
-Please cite this work using the following bibtex:
+Please cite our work using the following bibtex:
 ```
 @article{villarreal2023mixed,
   title={Mixed Traffic Control and Coordination from Pixels},
@@ -35,4 +29,10 @@ Please cite this work using the following bibtex:
   year={2023}
 }
 ```
+
+This code base originally comes from the following paper:
+
+C. Wu, A. Kreidieh, K. Parvate, E. Vinitsky, A. Bayen, "Flow: Architecture and Benchmarking for Reinforcement Learning in Traffic Control," CoRR, vol. abs/1710.05465, 2017. [Online]. Available: https://arxiv.org/abs/1710.05465.
+
+Please also consider cite this work.
 
