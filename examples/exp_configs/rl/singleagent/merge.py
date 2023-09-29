@@ -21,7 +21,7 @@ from flow.controllers import SimCarFollowingController, RLController
 HORIZON = 750
 # HORIZON = 700
 # inflow rate at the highway
-FLOW_RATE = 1700
+FLOW_RATE = 1500
 # inflow rate at the merge
 MERGE_RATE = 200
 # percent of autonomous vehicles
@@ -32,7 +32,7 @@ N_ROLLOUTS = 10
 # number of parallel workers
 N_CPUS = 10
 
-OBS_TYPE = "precise" # Options: ["precise", "image"]
+OBS_TYPE = "image" # Options: ["precise", "image"]
 EVALUATE = False
 CIRCLE_MASK = True
 PERTURB = False
@@ -91,7 +91,7 @@ inflow.add(
 
 flow_params = dict(
     # name of the experiment
-    exp_tag="double_merge_precise_HW1700M200",
+    exp_tag="double_merge_precise_HW1500M200",
 
     # name of the flow environment the experiment is running on
     env_name=MergePOEnv,

@@ -18,11 +18,11 @@ from flow.controllers import RLController, ContinuousRouter
 # time horizon of a single rollout
 HORIZON = 1000
 
-N_CPUS = 10
+N_CPUS = 5
 # number of rollouts per training iteration
 N_ROLLOUTS = 10
 
-OBS_TYPE = "precise" # Options: ["precise", "image"]
+OBS_TYPE = "image" # Options: ["precise", "image"]
 CIRCLE_MASK = True
 PERTURB = False
 
@@ -112,7 +112,7 @@ num_observed_segments = [("1", 1), ("2", 3), ("3", 3), ("4", 3), ("5", 1)]
 
 
 # flow rate
-flow_rate = 2100 * SCALING
+flow_rate = 2500 * SCALING
 
 # percentage of flow coming out of each lane
 inflow = InFlows()
@@ -172,7 +172,7 @@ net_params = NetParams(
 
 flow_params = dict(
     # name of the experiment
-    exp_tag="bottleneck_hetero_precise_2100",
+    exp_tag="bottleneck_hetero_image_2500",
 
     # name of the flow environment the experiment is running on
     env_name=BottleneckDesiredVelocityEnv,

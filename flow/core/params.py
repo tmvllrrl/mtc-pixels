@@ -319,13 +319,27 @@ class VehicleParams:
             type_params['color'] = color
             self.type_parameters[veh_id]['color'] = color
 
-        if length:
-            type_params['length'] = length
-            self.type_parameters[veh_id]['length'] = length
+        if veh_id == "passenger":
+            length = 5
+            gui_shape = "passenger"
+        elif veh_id == "public_bus":
+            length = 12.2
+            gui_shape = "bus"
+        elif veh_id == "delivery":
+            length = 8
+            gui_shape = "delivery"
+        elif veh_id == "semitruck":
+            length = 21.9
+            gui_shape = "truck/semitrailer"
+        elif veh_id == "motorcycle":
+            length = 1.5
+            gui_shape = "motorcycle"
 
-        if gui_shape:
-            type_params['guiShape'] = gui_shape
-            self.type_parameters[veh_id]['gui_shape'] = gui_shape
+        type_params['length'] = length
+        self.type_parameters[veh_id]['length'] = length
+
+        type_params['guiShape'] = gui_shape
+        self.type_parameters[veh_id]['gui_shape'] = gui_shape
 
 
         # TODO: delete?
