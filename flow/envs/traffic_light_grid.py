@@ -17,7 +17,7 @@ from gym.spaces import Tuple
 from flow.core import rewards
 from flow.envs.base import Env
 
-from michael_files.perturb_utils import generate_perturb_img
+from mtc_pixels.perturb_utils import generate_perturb_img
 
 ADDITIONAL_ENV_PARAMS = {
     # minimum switch time for each traffic light (in seconds)
@@ -835,7 +835,7 @@ class TrafficLightGridPOEnv(TrafficLightGridEnv):
             sight_radius = self.sim_params.sight_radius
             x, y = 400, 405 # original 400, 373
             
-            observation = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        \
+            observation = Image.open(f"./mtc_pixels/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")        \
 
             '''
             Adding perturbation to base, 3-channel image (Image dimensions are: (H, W, C))
@@ -854,7 +854,7 @@ class TrafficLightGridPOEnv(TrafficLightGridEnv):
             Code for saving an image observation 
             '''
             # observation = Image.fromarray(observation)
-            # observation.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
+            # observation.save(f'./mtc_pixels/sumo_obs/example{self.k.simulation.id}_{self.k.simulation.timestep}.png')
             # observation = np.asarray(observation)   
                  
             observation = observation / 255.

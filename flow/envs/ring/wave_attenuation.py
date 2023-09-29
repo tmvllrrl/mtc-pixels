@@ -26,7 +26,7 @@ from copy import deepcopy
 from PIL import Image
 from scipy.optimize import fsolve
 
-from michael_files.perturb_utils import generate_perturb_img
+from mtc_pixels.perturb_utils import generate_perturb_img
 
 
 ADDITIONAL_ENV_PARAMS = {
@@ -369,30 +369,30 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
             '''
             if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
                 
-                if not os.path.exists(f"./michael_files/{results_name}/"):
-                    os.mkdir(f"./michael_files/{results_name}/")
+                if not os.path.exists(f"./mtc_pixels/{results_name}/"):
+                    os.mkdir(f"./mtc_pixels/{results_name}/")
             
-                with open(f"./michael_files/{results_name}/avg_velocity.txt", "a") as f:
+                with open(f"./mtc_pixels/{results_name}/avg_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
                 
-                with open(f"./michael_files/{results_name}/min_velocity.txt", "a") as f:
+                with open(f"./mtc_pixels/{results_name}/min_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
                 
-                with open(f"./michael_files/{results_name}/rl_velocity.txt", "a") as f:
+                with open(f"./mtc_pixels/{results_name}/rl_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
             
-                with open(f"./michael_files/{results_name}/rl_accel_realized.txt", "a") as f:
+                with open(f"./mtc_pixels/{results_name}/rl_accel_realized.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
                     f.write("\n")
 
                 self.rl_action_collector = np.asarray(self.rl_action_collector)
-                np.savez(f"./michael_files/{results_name}/rl_action_collector.npz", rl_actions=self.rl_action_collector)
+                np.savez(f"./mtc_pixels/{results_name}/rl_action_collector.npz", rl_actions=self.rl_action_collector)
 
                 self.space_time_collector = np.asarray(self.space_time_collector)
-                np.savez(f"./michael_files/{results_name}/space_time_collector.npz", space_time_collector=self.space_time_collector)
+                np.savez(f"./mtc_pixels/{results_name}/space_time_collector.npz", space_time_collector=self.space_time_collector)
                 plot_std(self.space_time_collector, horizon=3000, warmup=3000, results_name=results_name)
 
             speed = np.asarray([self.k.vehicle.get_speed(veh_id) for veh_id in self.k.vehicle.get_ids()])
@@ -495,7 +495,7 @@ class WaveAttenuationPOEnv(WaveAttenuationEnv):
             x, y = self.k.vehicle.get_2d_position(rl_id)
             x, y = self.map_coordinates(x, y)
 
-            observation = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")
+            observation = Image.open(f"./mtc_pixels/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")
 
             '''
             Adding perturbation to base, 3-channel image (Image dimensions are: (H, W, C))

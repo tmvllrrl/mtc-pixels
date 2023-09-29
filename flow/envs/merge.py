@@ -16,7 +16,7 @@ import os
 import cv2
 import collections
 
-from michael_files.perturb_utils import generate_perturb_img
+from mtc_pixels.perturb_utils import generate_perturb_img
 
 ADDITIONAL_ENV_PARAMS = {
     # maximum acceleration for autonomous vehicles, in m/s^2
@@ -150,22 +150,22 @@ class MergePOEnv(Env):
 
             if self.step_counter == self.env_params.horizon + self.env_params.warmup_steps:
                 
-                if not os.path.exists(f"./michael_files/{results_dir}/"):
-                    os.mkdir(f"./michael_files/{results_dir}/")
+                if not os.path.exists(f"./mtc_pixels/{results_dir}/"):
+                    os.mkdir(f"./mtc_pixels/{results_dir}/")
             
-                with open(f"./michael_files/{results_dir}/avg_velocity.txt", "a") as f:
+                with open(f"./mtc_pixels/{results_dir}/avg_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.avg_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
                 
-                with open(f"./michael_files/{results_dir}/min_velocity.txt", "a") as f:
+                with open(f"./mtc_pixels/{results_dir}/min_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.min_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
                 
-                with open(f"./michael_files/{results_dir}/rl_velocity.txt", "a") as f:
+                with open(f"./mtc_pixels/{results_dir}/rl_velocity.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.rl_velocity_collector), delimiter=",", newline=",")
                     f.write("\n")
             
-                with open(f"./michael_files/{results_dir}/rl_accel_realized.txt", "a") as f:
+                with open(f"./mtc_pixels/{results_dir}/rl_accel_realized.txt", "a") as f:
                     np.savetxt(f, np.asarray(self.rl_accel_realized_collector), delimiter=",", newline=",")
                     f.write("\n")
 
@@ -238,7 +238,7 @@ class MergePOEnv(Env):
                     continue
                 x, y = self.map_coordinates(x, y)
                 
-                bev = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB") 
+                bev = Image.open(f"./mtc_pixels/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB") 
 
                 '''
                 Adding perturbation to base, 3-channel image (Image dimensions are: (H, W, C))
@@ -257,7 +257,7 @@ class MergePOEnv(Env):
                 Code for saving an image observation 
                 '''
                 # bev = Image.fromarray(bev)
-                # bev.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.time_counter}_{i}.png')
+                # bev.save(f'./mtc_pixels/sumo_obs/example{self.k.simulation.id}_{self.time_counter}_{i}.png')
                 # bev = np.asarray(bev)
                 
                 bev = bev / 255.

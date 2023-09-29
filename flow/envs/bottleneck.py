@@ -28,7 +28,7 @@ from gym.spaces.box import Box
 from flow.core import rewards
 from flow.envs.base import Env
 
-from michael_files.perturb_utils import generate_perturb_img
+from mtc_pixels.perturb_utils import generate_perturb_img
 
 MAX_LANES = 4  # base number of largest number of lanes in the network
 EDGE_LIST = ["1", "2", "3", "4", "5"]  # Edge 1 is before the toll booth
@@ -1012,7 +1012,7 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
                     continue
                 x, y = self.map_coordinates(x,y)
 
-                bev = Image.open(f"./michael_files/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")     
+                bev = Image.open(f"./mtc_pixels/sumo_obs/state_{self.k.simulation.id}.jpeg").convert("RGB")     
 
                 '''
                 Adding perturbation to base, 3-channel image (Image dimensions are: (H, W, C))
@@ -1031,7 +1031,7 @@ class BottleneckDesiredVelocityEnv(BottleneckEnv):
                 Code for saving an image observation 
                 '''
                 # bev = Image.fromarray(bev)
-                # bev.save(f'./michael_files/sumo_obs/example{self.k.simulation.id}_{self.time_counter}_{i}.png')
+                # bev.save(f'./mtc_pixels/sumo_obs/example{self.k.simulation.id}_{self.time_counter}_{i}.png')
                 # bev = np.asarray(bev)
                 
                 bev = bev / 255.
