@@ -1,3 +1,13 @@
-# FLOW - Edited by Michael Villarreal
+# Mixed Traffic Control and Coordination from Pixels
 
-This codebase comes from the FLOW code located at flow-project/flow. It has been modified by Michael Villarreal to only be what is necessary for his work/research. It also includes new features or functionality.
+This code base originally comes from Dr. Cathy Wu's Flow paper:
+C. Wu, A. Kreidieh, K. Parvate, E. Vinitsky, A. Bayen, "Flow: Architecture and Benchmarking for Reinforcement Learning in Traffic Control," CoRR, vol. abs/1710.05465, 2017. [Online]. Available: https://arxiv.org/abs/1710.05465
+
+Please cite the original Flow paper if citing this work.
+
+## Installation
+
+
+
+
+
