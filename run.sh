@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# python examples/train.py ring
+# python configs/train.py ring
 
-# python examples/train.py figure_eight
+# python configs/train.py figure_eight
 
-# python examples/train.py merge
+# python configs/train.py merge
 
-# python examples/train.py intersection
+# python configs/train.py intersection
 
-# python examples/train.py bottleneck
+python configs/train.py bottleneck
 
 
 
