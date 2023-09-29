@@ -45,7 +45,7 @@ RL_PENETRATION = 0.2
 '''
 OBS_TYPE = "image"
 CIRCLE_MASK = False  
-PERTURB = True
+PERTURB = False
 
 
 # we place a sufficient number of vehicles to ensure they confirm with the

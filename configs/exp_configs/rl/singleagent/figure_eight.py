@@ -13,12 +13,12 @@ N_ROLLOUTS = 10
 # number of parallel workers
 N_CPUS = 10
 
-OBS_TYPE = "precise" # Options: ["precise", "image", "partial", "blank"]
+OBS_TYPE = "image" # Options: ["precise", "image", "partial", "blank"]
 EVALUTE = False
 REWARD_FUNC = "accel" # Options: ["accel", "wave"]
 MEMORY = False
 CIRCLE_MASK = True
-PERTURB = True
+PERTURB = False
 
 # We place one autonomous vehicle and 13 human-driven vehicles in the network
 vehicles = VehicleParams()
