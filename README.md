@@ -18,6 +18,8 @@ Example commands for training each of the five environments from the paper are p
 python configs/train.py ring
 ```
 
+More details about training and running the environments are provided in the instructions.
+
 ## Evaluation
 
 Example commands for evaluating a trained policy are provided in eval.sh. More details for evaluating a trained policy are provided for in the instructions.
