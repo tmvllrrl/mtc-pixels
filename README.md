@@ -1,3 +1,5 @@
+Paper in [ArXiV](https://arxiv.org/abs/2302.09167v4), [ICRA 2024 Presentation Video](), [ICRA 2024 Poster](https://github.com/tmvllrrl/mtc-pixels/blob/master/ICRA_Poster_medium.pdf)
+
 # Mixed Traffic Control and Coordination from Pixels
 
 ## Installation
@@ -22,11 +24,11 @@ Example commands for evaluating a trained policy are provided in eval.sh. More d
 
 Please cite our work using the following bibtex:
 ```
-@article{villarreal2023mixed,
+@inproceedings{villarreal2023mixed,
   title={Mixed Traffic Control and Coordination from Pixels},
   author={Villarreal, Michael and Poudel, Bibek and Pan, Jia and Li, Weizi},
-  journal={arXiv preprint arXiv:2302.09167},
-  year={2023}
+  booktitle={2024 IEEE International Conference on Robotics and Automation (ICRA)},
+  year={2024}
 }
 ```
 
