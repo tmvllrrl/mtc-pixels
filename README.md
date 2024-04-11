@@ -1,7 +1,7 @@
 # Mixed Traffic Control and Coordination from Pixels
 
 - Paper in [ArXiV](https://arxiv.org/abs/2302.09167v4)
-- ICRA 2024 [Presentation Video]()
+- ICRA 2024 [Presentation Video](https://youtu.be/g-aBGhdFHXU)
 - ICRA 2024 [Poster](https://github.com/tmvllrrl/mtc-pixels/blob/master/ICRA_Poster_medium.pdf)
 
 ## Installation
